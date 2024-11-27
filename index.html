@@ -72,12 +72,12 @@
     <!-- Resultados -->
     <div class="output">
         <h2>Resultados</h2>
-        <p><strong>Demanda das Impressoras:</strong> <span id="demandaImpressoras"></span> bobinas/min</p>
-        <p><strong>Demanda do Corte Corpo:</strong> <span id="demandaCorteCorpo"></span> bobinas/min</p>
-        <p><strong>Demanda do Corte Carrossel:</strong> <span id="demandaCorteCarrossel"></span> bobinas/min</p>
-        <p><strong>Demanda das Laminadoras:</strong> <span id="demandaLaminadoras"></span> bobinas/min</p>
-        <p><strong>Capacidade do Rebocador:</strong> <span id="rebocadorCapacidadeTotal"></span> bobinas/min</p>
-        <p><strong>Demanda Total:</strong> <span id="demandaTotal"></span> bobinas/min</p>
+        <p><strong>Demanda das Impressoras:</strong> <span id="demandaImpressoras"></span> bobinas/hora</p>
+        <p><strong>Demanda do Corte Corpo:</strong> <span id="demandaCorteCorpo"></span> bobinas/hora</p>
+        <p><strong>Demanda do Corte Carrossel:</strong> <span id="demandaCorteCarrossel"></span> bobinas/hora</p>
+        <p><strong>Demanda das Laminadoras:</strong> <span id="demandaLaminadoras"></span> bobinas/hora</p>
+        <p><strong>Capacidade do Rebocador:</strong> <span id="rebocadorCapacidadeTotal"></span> bobinas/hora</p>
+        <p><strong>Demanda Total:</strong> <span id="demandaTotal"></span> bobinas/hora</p>
         <p><strong>Status:</strong> <span id="status"></span></p>
     </div>
 
@@ -90,39 +90,39 @@
             // Impressoras
             const metragemImpressoras = parseFloat(document.getElementById("metragemImpressoras").value);
             const velocidadeImpressoras = parseFloat(document.getElementById("velocidadeImpressoras").value);
-            const demandaImpressoras = velocidadeImpressoras > 0 ? 3 / (metragemImpressoras / velocidadeImpressoras) : 0;
+            const demandaImpressoras = velocidadeImpressoras > 0 ? (3 / (metragemImpressoras / velocidadeImpressoras)) * 60 : 0;
 
             // Corte Corpo
             const metragemCorteCorpo = parseFloat(document.getElementById("metragemCorteCorpo").value);
             const velocidadeCorteCorpo = parseFloat(document.getElementById("velocidadeCorteCorpo").value);
-            const demandaCorteCorpo = velocidadeCorteCorpo > 0 ? 1 / (metragemCorteCorpo / velocidadeCorteCorpo) : 0;
+            const demandaCorteCorpo = velocidadeCorteCorpo > 0 ? (1 / (metragemCorteCorpo / velocidadeCorteCorpo)) * 60 : 0;
 
             // Corte Carrossel
             const metragemCorteCarrossel = parseFloat(document.getElementById("metragemCorteCarrossel").value);
             const velocidadeCorteCarrossel = parseFloat(document.getElementById("velocidadeCorteCarrossel").value);
-            const demandaCorteCarrossel = velocidadeCorteCarrossel > 0 ? 1 / (metragemCorteCarrossel / velocidadeCorteCarrossel) : 0;
+            const demandaCorteCarrossel = velocidadeCorteCarrossel > 0 ? (1 / (metragemCorteCarrossel / velocidadeCorteCarrossel)) * 60 : 0;
 
             // Laminadoras
             const metragemLaminadoras = parseFloat(document.getElementById("metragemLaminadoras").value);
             const velocidadeLaminadoras = parseFloat(document.getElementById("velocidadeLaminadoras").value);
-            const demandaLaminadoras = velocidadeLaminadoras > 0 ? 4 / (metragemLaminadoras / velocidadeLaminadoras) : 0;
+            const demandaLaminadoras = velocidadeLaminadoras > 0 ? (4 / (metragemLaminadoras / velocidadeLaminadoras)) * 60 : 0;
 
             // Capacidade e demanda total
-            const capacidadeRebocadorMin = capacidadeRebocador / tempoCiclo;
+            const capacidadeRebocadorHora = (capacidadeRebocador / tempoCiclo) * 60;
             const demandaTotal = demandaImpressoras + demandaCorteCorpo + demandaCorteCarrossel + demandaLaminadoras;
 
             // Atualização dos resultados
-            document.getElementById("demandaImpressoras").innerText = demandaImpressoras.toFixed(3);
-            document.getElementById("demandaCorteCorpo").innerText = demandaCorteCorpo.toFixed(3);
-            document.getElementById("demandaCorteCarrossel").innerText = demandaCorteCarrossel.toFixed(3);
-            document.getElementById("demandaLaminadoras").innerText = demandaLaminadoras.toFixed(3);
-            document.getElementById("rebocadorCapacidadeTotal").innerText = capacidadeRebocadorMin.toFixed(3);
-            document.getElementById("demandaTotal").innerText = demandaTotal.toFixed(3);
+            document.getElementById("demandaImpressoras").innerText = demandaImpressoras.toFixed(2);
+            document.getElementById("demandaCorteCorpo").innerText = demandaCorteCorpo.toFixed(2);
+            document.getElementById("demandaCorteCarrossel").innerText = demandaCorteCarrossel.toFixed(2);
+            document.getElementById("demandaLaminadoras").innerText = demandaLaminadoras.toFixed(2);
+            document.getElementById("rebocadorCapacidadeTotal").innerText = capacidadeRebocadorHora.toFixed(2);
+            document.getElementById("demandaTotal").innerText = demandaTotal.toFixed(2);
 
             // Status
-            const status = capacidadeRebocadorMin >= demandaTotal ? "Atende à demanda" : "Não atende à demanda";
+            const status = capacidadeRebocadorHora >= demandaTotal ? "Atende à demanda" : "Não atende à demanda";
             document.getElementById("status").innerText = status;
-            document.getElementById("status").style.color = capacidadeRebocadorMin >= demandaTotal ? "green" : "red";
+            document.getElementById("status").style.color = capacidadeRebocadorHora >= demandaTotal ? "green" : "red";
         }
 
         // Adiciona eventos para recalcular quando os valores mudam
