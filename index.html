@@ -33,17 +33,15 @@
     <script src="https://docs.opencv.org/4.x/opencv.js"></script>
     <script src="script.js"></script>
     <script>
-       const video = document.getElementById('video');
+        const video = document.getElementById('video');
 const canvas = document.getElementById('output');
 const timerElement = document.getElementById('timer');
 const ctx = canvas.getContext('2d');
 
-// Variáveis do cronômetro
 let startTime = null;
 let elapsedTime = 0;
 let isRunning = false;
 
-// Funções do cronômetro
 const startTimer = () => {
     if (!isRunning) {
         startTime = Date.now() - elapsedTime;
@@ -69,7 +67,6 @@ const updateTimer = () => {
     requestAnimationFrame(updateTimer);
 };
 
-// Configurar a câmera
 navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
     .then(stream => {
         video.srcObject = stream;
@@ -77,7 +74,6 @@ navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
     })
     .catch(err => console.error("Erro ao acessar a câmera: ", err));
 
-// Processar vídeo e detectar movimento
 video.addEventListener('play', () => {
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
@@ -88,22 +84,19 @@ video.addEventListener('play', () => {
     const diffFrame = new cv.Mat();
 
     const processVideo = () => {
-        // Captura o frame atual
         cap.read(currentFrame);
         cv.cvtColor(currentFrame, currentFrame, cv.COLOR_RGBA2GRAY);
 
         if (!prevFrame.empty()) {
-            // Calcula a diferença entre frames
             cv.absdiff(currentFrame, prevFrame, diffFrame);
 
-            // Contar pixels diferentes para detectar movimento
-            const motionThreshold = 300; // Ajuste o limiar conforme necessário
+            // Ajuste o limiar para detectar movimento
+            const motionThreshold = 300; // Você pode alterar esse valor conforme necessário
             const motionDetected = cv.countNonZero(diffFrame) > motionThreshold;
 
-            // Depuração
+            // Exibir no console para depuração
             console.log("Motion Detected:", motionDetected);
 
-            // Controle do cronômetro
             if (motionDetected) {
                 startTimer();
             } else {
@@ -111,18 +104,16 @@ video.addEventListener('play', () => {
             }
         }
 
-        // Atualiza o frame anterior
         currentFrame.copyTo(prevFrame);
-
-        // Exibir o vídeo no canvas
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        // Continuar processando frames
+        // Chama a próxima iteração de processamento
         requestAnimationFrame(processVideo);
     };
 
-    updateTimer(); // Atualiza o cronômetro na interface
-    processVideo(); // Inicia o processamento do vídeo
+    // Inicia a atualização do cronômetro e o processamento do vídeo
+    updateTimer();
+    processVideo();
 });
 
     </script>
