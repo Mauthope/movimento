@@ -12,8 +12,8 @@
             align-items: center;
             justify-content: center;
             height: 100vh;
-            background: #222;
-            color: #fff;
+            background: #333;
+            color: white;
             font-family: Arial, sans-serif;
         }
         video, canvas {
@@ -31,7 +31,6 @@
     <canvas id="output"></canvas>
     <div id="timer">00:00:00</div>
 
-    <!-- OpenCV.js -->
     <script src="https://docs.opencv.org/4.x/opencv.js"></script>
     <script>
         const video = document.getElementById('video');
@@ -43,7 +42,7 @@
         let elapsedTime = 0;
         let isRunning = false;
 
-        // Funções do cronômetro
+        // Inicia o cronômetro
         const startTimer = () => {
             if (!isRunning) {
                 startTime = Date.now() - elapsedTime;
@@ -51,6 +50,7 @@
             }
         };
 
+        // Pausa o cronômetro
         const stopTimer = () => {
             if (isRunning) {
                 elapsedTime = Date.now() - startTime;
@@ -58,6 +58,7 @@
             }
         };
 
+        // Atualiza o cronômetro na tela
         const updateTimer = () => {
             if (isRunning) {
                 const time = new Date(Date.now() - startTime);
@@ -69,7 +70,7 @@
             requestAnimationFrame(updateTimer);
         };
 
-        // Acessar a câmera
+        // Solicita permissão para acessar a câmera traseira do celular
         navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
             .then(stream => {
                 video.srcObject = stream;
@@ -87,22 +88,20 @@
             const diffFrame = new cv.Mat();
 
             const processVideo = () => {
-                // Captura o frame atual
                 cap.read(currentFrame);
                 cv.cvtColor(currentFrame, currentFrame, cv.COLOR_RGBA2GRAY);
 
                 if (!prevFrame.empty()) {
-                    // Calcular a diferença entre frames
                     cv.absdiff(currentFrame, prevFrame, diffFrame);
 
-                    // Contar pixels que mudaram
+                    // Ajuste o limiar para detectar movimento
                     const motionThreshold = 300; // Ajuste conforme necessário
                     const motionDetected = cv.countNonZero(diffFrame) > motionThreshold;
 
                     // Exibir no console para depuração
                     console.log("Motion Detected:", motionDetected);
 
-                    // Controlar o cronômetro com base no movimento
+                    // Controla o cronômetro
                     if (motionDetected) {
                         startTimer();
                     } else {
@@ -110,17 +109,14 @@
                     }
                 }
 
-                // Copiar o frame atual para usar como anterior
                 currentFrame.copyTo(prevFrame);
-
-                // Desenhar o vídeo no canvas
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-                // Próximo frame
+                // Chama a próxima iteração de processamento
                 requestAnimationFrame(processVideo);
             };
 
-            // Atualizar cronômetro e processar vídeo
+            // Inicia a atualização do cronômetro e o processamento do vídeo
             updateTimer();
             processVideo();
         });
