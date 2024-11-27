@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detecção de Movimento</title>
+</head>
+<body>
+    <video id="video" autoplay></video>
+    <canvas id="output"></canvas>
+    <script src="https://docs.opencv.org/4.x/opencv.js"></script>
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('output');
+        const ctx = canvas.getContext('2d');
+
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+            .then(stream => {
+                video.srcObject = stream;
+                video.play();
+            });
+
+        video.addEventListener('play', () => {
+            const cap = new cv.VideoCapture(video);
+            const frame = new cv.Mat(video.height, video.width, cv.CV_8UC4);
+            const gray = new cv.Mat();
+            const prevGray = new cv.Mat();
+            const flow = new cv.Mat();
+
+            const processVideo = () => {
+                cap.read(frame);
+                cv.cvtColor(frame, gray, cv.COLOR_RGBA2GRAY);
+
+                if (!prevGray.empty()) {
+                    cv.calcOpticalFlowFarneback(
+                        prevGray, gray, flow, 0.5, 3, 15, 3, 5, 1.2, 0
+                    );
+                    // Process `flow` to determine direction/speed
+                }
+
+                gray.copyTo(prevGray);
+                requestAnimationFrame(processVideo);
+            };
+
+            processVideo();
+        });
+    </script>
+</body>
+</html>
