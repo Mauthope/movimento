@@ -3,123 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Detecção de Quadrado Vermelho</title>
+    <title>Simulação Logística</title>
     <style>
         body {
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            background: #333;
-            color: white;
             font-family: Arial, sans-serif;
+            margin: 20px;
         }
-        video, canvas {
-            max-width: 100%;
-            border: 2px solid #fff;
+        label {
+            display: block;
+            margin-top: 10px;
         }
-        #counter {
+        input {
+            width: 100%;
+            padding: 5px;
+            margin-bottom: 10px;
+        }
+        .output {
             margin-top: 20px;
-            font-size: 2em;
+            padding: 10px;
+            background-color: #f0f0f0;
+            border-radius: 5px;
         }
     </style>
 </head>
 <body>
-    <video id="video" autoplay muted playsinline></video>
-    <canvas id="output"></canvas>
-    <div id="counter">Quadrados Vermelhos Detectados: 0</div>
+    <h1>Simulação Logística</h1>
+    <p>Altere os valores abaixo e veja se o rebocador consegue atender à demanda.</p>
 
-    <script src="https://docs.opencv.org/4.x/opencv.js"></script>
+    <label for="rebocadorCapacidade">Capacidade do rebocador (bobinas/viagem):</label>
+    <input type="number" id="rebocadorCapacidade" value="6" step="1" min="1">
+
+    <label for="tempoCiclo">Tempo de ciclo do rebocador (min):</label>
+    <input type="number" id="tempoCiclo" value="15" step="1" min="1">
+
+    <label for="demandaImpressoras">Demanda das impressoras (bobinas/min):</label>
+    <input type="number" id="demandaImpressoras" value="0.25" step="0.01" min="0">
+
+    <label for="demandaCorteCorpo">Demanda do corte corpo (bobinas/min):</label>
+    <input type="number" id="demandaCorteCorpo" value="0.00599" step="0.0001" min="0">
+
+    <label for="demandaCorteCarrossel">Demanda do corte carrossel (bobinas/min):</label>
+    <input type="number" id="demandaCorteCarrossel" value="0.01333" step="0.0001" min="0">
+
+    <label for="demandaLaminadoras">Demanda das laminadoras (bobinas/min):</label>
+    <input type="number" id="demandaLaminadoras" value="0.222" step="0.01" min="0">
+
+    <div class="output">
+        <h2>Resultados</h2>
+        <p><strong>Capacidade do rebocador:</strong> <span id="rebocadorCapacidadeTotal"></span> bobinas/min</p>
+        <p><strong>Demanda total:</strong> <span id="demandaTotal"></span> bobinas/min</p>
+        <p><strong>Status:</strong> <span id="status"></span></p>
+    </div>
+
     <script>
-        const video = document.getElementById('video');
-        const canvas = document.getElementById('output');
-        const counterElement = document.getElementById('counter');
-        const ctx = canvas.getContext('2d');
+        function calcular() {
+            // Entrada de dados
+            const capacidadeRebocador = parseFloat(document.getElementById("rebocadorCapacidade").value);
+            const tempoCiclo = parseFloat(document.getElementById("tempoCiclo").value);
+            const demandaImpressoras = parseFloat(document.getElementById("demandaImpressoras").value);
+            const demandaCorteCorpo = parseFloat(document.getElementById("demandaCorteCorpo").value);
+            const demandaCorteCarrossel = parseFloat(document.getElementById("demandaCorteCarrossel").value);
+            const demandaLaminadoras = parseFloat(document.getElementById("demandaLaminadoras").value);
 
-        let counter = 0;
+            // Cálculos
+            const capacidadeRebocadorMin = capacidadeRebocador / tempoCiclo;
+            const demandaTotal = demandaImpressoras + demandaCorteCorpo + demandaCorteCarrossel + demandaLaminadoras;
 
-        // Inicializa a câmera
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-            .then(stream => {
-                video.srcObject = stream;
-                video.play();
-            })
-            .catch(err => console.error("Erro ao acessar a câmera: ", err));
+            // Atualização dos resultados
+            document.getElementById("rebocadorCapacidadeTotal").innerText = capacidadeRebocadorMin.toFixed(3);
+            document.getElementById("demandaTotal").innerText = demandaTotal.toFixed(3);
 
-        video.addEventListener('play', () => {
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
+            // Status
+            const status = capacidadeRebocadorMin >= demandaTotal ? "Atende à demanda" : "Não atende à demanda";
+            document.getElementById("status").innerText = status;
+            document.getElementById("status").style.color = capacidadeRebocadorMin >= demandaTotal ? "green" : "red";
+        }
 
-            const cap = new cv.VideoCapture(video);
-            const frame = new cv.Mat(video.videoHeight, video.videoWidth, cv.CV_8UC4);
-            const hsv = new cv.Mat();
-            const mask = new cv.Mat();
-            const contours = new cv.MatVector();
-            const hierarchy = new cv.Mat();
-
-            // Função de processamento do vídeo
-            const processVideo = () => {
-                cap.read(frame);
-
-                // Converte o frame para o espaço de cores HSV
-                cv.cvtColor(frame, hsv, cv.COLOR_RGBA2HSV);
-
-                // Define o intervalo de cor vermelha em HSV
-                const lowerRed = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [0, 120, 70, 0]);
-                const upperRed = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [10, 255, 255, 255]);
-                cv.inRange(hsv, lowerRed, upperRed, mask);
-
-                const lowerRed2 = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [170, 120, 70, 0]);
-                const upperRed2 = new cv.Mat(hsv.rows, hsv.cols, hsv.type(), [180, 255, 255, 255]);
-                cv.inRange(hsv, lowerRed2, upperRed2, mask);
-
-                // Combina as duas máscaras de vermelho
-                const combinedMask = new cv.Mat();
-                cv.bitwise_or(mask, mask, combinedMask);
-
-                // Encontra os contornos dos objetos vermelhos
-                cv.findContours(combinedMask, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
-
-                let foundSquare = false;
-
-                // Itera sobre os contornos encontrados
-                for (let i = 0; i < contours.size(); i++) {
-                    let contour = contours.get(i);
-                    let perimeter = cv.arcLength(contour, true);
-                    let epsilon = 0.02 * perimeter;
-                    let approx = new cv.Mat();
-                    cv.approxPolyDP(contour, approx, epsilon, true);
-
-                    // Verifica se o contorno é um quadrado
-                    if (approx.rows === 4 && cv.isContourConvex(approx)) {
-                        // Verifica se a área do quadrado é suficientemente grande
-                        const area = cv.contourArea(contour);
-                        if (area > 1000) { // Ajuste esse valor conforme necessário
-                            foundSquare = true;
-                        }
-                    }
-
-                    approx.delete();
-                }
-
-                // Se um quadrado vermelho foi detectado, incrementa o contador
-                if (foundSquare) {
-                    counter++;
-                    counterElement.textContent = `Quadrados Vermelhos Detectados: ${counter}`;
-                }
-
-                // Exibe o resultado no canvas
-                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-                // Chama a próxima iteração de processamento
-                requestAnimationFrame(processVideo);
-            };
-
-            // Inicia o processamento do vídeo
-            processVideo();
+        // Adiciona eventos para recalcular quando os valores mudam
+        document.querySelectorAll("input").forEach(input => {
+            input.addEventListener("input", calcular);
         });
+
+        // Cálculo inicial
+        calcular();
     </script>
 </body>
 </html>
