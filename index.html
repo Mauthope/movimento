@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Detecção de Movimento</title>
+    <title>Detecção de Movimento com Cronômetro</title>
     <style>
         body {
             margin: 0;
@@ -12,8 +12,8 @@
             align-items: center;
             justify-content: center;
             height: 100vh;
-            background: #333;
-            color: white;
+            background: #222;
+            color: #fff;
             font-family: Arial, sans-serif;
         }
         video, canvas {
@@ -30,92 +30,100 @@
     <video id="video" autoplay muted playsinline></video>
     <canvas id="output"></canvas>
     <div id="timer">00:00:00</div>
+
+    <!-- OpenCV.js -->
     <script src="https://docs.opencv.org/4.x/opencv.js"></script>
-    <script src="script.js"></script>
     <script>
         const video = document.getElementById('video');
-const canvas = document.getElementById('output');
-const timerElement = document.getElementById('timer');
-const ctx = canvas.getContext('2d');
+        const canvas = document.getElementById('output');
+        const timerElement = document.getElementById('timer');
+        const ctx = canvas.getContext('2d');
 
-let startTime = null;
-let elapsedTime = 0;
-let isRunning = false;
+        let startTime = null;
+        let elapsedTime = 0;
+        let isRunning = false;
 
-const startTimer = () => {
-    if (!isRunning) {
-        startTime = Date.now() - elapsedTime;
-        isRunning = true;
-    }
-};
-
-const stopTimer = () => {
-    if (isRunning) {
-        elapsedTime = Date.now() - startTime;
-        isRunning = false;
-    }
-};
-
-const updateTimer = () => {
-    if (isRunning) {
-        const time = new Date(Date.now() - startTime);
-        const minutes = String(time.getUTCMinutes()).padStart(2, '0');
-        const seconds = String(time.getUTCSeconds()).padStart(2, '0');
-        const milliseconds = String(Math.floor(time.getUTCMilliseconds() / 10)).padStart(2, '0');
-        timerElement.textContent = `${minutes}:${seconds}:${milliseconds}`;
-    }
-    requestAnimationFrame(updateTimer);
-};
-
-navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-    .then(stream => {
-        video.srcObject = stream;
-        video.play();
-    })
-    .catch(err => console.error("Erro ao acessar a câmera: ", err));
-
-video.addEventListener('play', () => {
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-
-    const cap = new cv.VideoCapture(video);
-    const prevFrame = new cv.Mat(video.videoHeight, video.videoWidth, cv.CV_8UC1);
-    const currentFrame = new cv.Mat(video.videoHeight, video.videoWidth, cv.CV_8UC1);
-    const diffFrame = new cv.Mat();
-
-    const processVideo = () => {
-        cap.read(currentFrame);
-        cv.cvtColor(currentFrame, currentFrame, cv.COLOR_RGBA2GRAY);
-
-        if (!prevFrame.empty()) {
-            cv.absdiff(currentFrame, prevFrame, diffFrame);
-
-            // Ajuste o limiar para detectar movimento
-            const motionThreshold = 300; // Você pode alterar esse valor conforme necessário
-            const motionDetected = cv.countNonZero(diffFrame) > motionThreshold;
-
-            // Exibir no console para depuração
-            console.log("Motion Detected:", motionDetected);
-
-            if (motionDetected) {
-                startTimer();
-            } else {
-                stopTimer();
+        // Funções do cronômetro
+        const startTimer = () => {
+            if (!isRunning) {
+                startTime = Date.now() - elapsedTime;
+                isRunning = true;
             }
-        }
+        };
 
-        currentFrame.copyTo(prevFrame);
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const stopTimer = () => {
+            if (isRunning) {
+                elapsedTime = Date.now() - startTime;
+                isRunning = false;
+            }
+        };
 
-        // Chama a próxima iteração de processamento
-        requestAnimationFrame(processVideo);
-    };
+        const updateTimer = () => {
+            if (isRunning) {
+                const time = new Date(Date.now() - startTime);
+                const minutes = String(time.getUTCMinutes()).padStart(2, '0');
+                const seconds = String(time.getUTCSeconds()).padStart(2, '0');
+                const milliseconds = String(Math.floor(time.getUTCMilliseconds() / 10)).padStart(2, '0');
+                timerElement.textContent = `${minutes}:${seconds}:${milliseconds}`;
+            }
+            requestAnimationFrame(updateTimer);
+        };
 
-    // Inicia a atualização do cronômetro e o processamento do vídeo
-    updateTimer();
-    processVideo();
-});
+        // Acessar a câmera
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+            .then(stream => {
+                video.srcObject = stream;
+                video.play();
+            })
+            .catch(err => console.error("Erro ao acessar a câmera: ", err));
 
+        video.addEventListener('play', () => {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            const cap = new cv.VideoCapture(video);
+            const prevFrame = new cv.Mat(video.videoHeight, video.videoWidth, cv.CV_8UC1);
+            const currentFrame = new cv.Mat(video.videoHeight, video.videoWidth, cv.CV_8UC1);
+            const diffFrame = new cv.Mat();
+
+            const processVideo = () => {
+                // Captura o frame atual
+                cap.read(currentFrame);
+                cv.cvtColor(currentFrame, currentFrame, cv.COLOR_RGBA2GRAY);
+
+                if (!prevFrame.empty()) {
+                    // Calcular a diferença entre frames
+                    cv.absdiff(currentFrame, prevFrame, diffFrame);
+
+                    // Contar pixels que mudaram
+                    const motionThreshold = 300; // Ajuste conforme necessário
+                    const motionDetected = cv.countNonZero(diffFrame) > motionThreshold;
+
+                    // Exibir no console para depuração
+                    console.log("Motion Detected:", motionDetected);
+
+                    // Controlar o cronômetro com base no movimento
+                    if (motionDetected) {
+                        startTimer();
+                    } else {
+                        stopTimer();
+                    }
+                }
+
+                // Copiar o frame atual para usar como anterior
+                currentFrame.copyTo(prevFrame);
+
+                // Desenhar o vídeo no canvas
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                // Próximo frame
+                requestAnimationFrame(processVideo);
+            };
+
+            // Atualizar cronômetro e processar vídeo
+            updateTimer();
+            processVideo();
+        });
     </script>
 </body>
 </html>
