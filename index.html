@@ -30,15 +30,21 @@
     <h1>Simulação Logística</h1>
     <p>Altere os valores abaixo e veja se o rebocador consegue atender à demanda.</p>
 
+    <!-- Entrada de dados -->
     <label for="rebocadorCapacidade">Capacidade do rebocador (bobinas/viagem):</label>
     <input type="number" id="rebocadorCapacidade" value="6" step="1" min="1">
 
     <label for="tempoCiclo">Tempo de ciclo do rebocador (min):</label>
     <input type="number" id="tempoCiclo" value="15" step="1" min="1">
 
-    <label for="demandaImpressoras">Demanda das impressoras (bobinas/min):</label>
-    <input type="number" id="demandaImpressoras" value="0.25" step="0.01" min="0">
+    <h2>Impressoras</h2>
+    <label for="metragem">Metragem (m):</label>
+    <input type="number" id="metragem" value="100" step="1" min="1">
 
+    <label for="velocidade">Velocidade (m/min):</label>
+    <input type="number" id="velocidade" value="20" step="1" min="1">
+
+    <h2>Demanda de Outros Setores</h2>
     <label for="demandaCorteCorpo">Demanda do corte corpo (bobinas/min):</label>
     <input type="number" id="demandaCorteCorpo" value="0.00599" step="0.0001" min="0">
 
@@ -48,8 +54,10 @@
     <label for="demandaLaminadoras">Demanda das laminadoras (bobinas/min):</label>
     <input type="number" id="demandaLaminadoras" value="0.222" step="0.01" min="0">
 
+    <!-- Resultados -->
     <div class="output">
         <h2>Resultados</h2>
+        <p><strong>Demanda das impressoras:</strong> <span id="demandaImpressoras"></span> bobinas/min</p>
         <p><strong>Capacidade do rebocador:</strong> <span id="rebocadorCapacidadeTotal"></span> bobinas/min</p>
         <p><strong>Demanda total:</strong> <span id="demandaTotal"></span> bobinas/min</p>
         <p><strong>Status:</strong> <span id="status"></span></p>
@@ -60,16 +68,25 @@
             // Entrada de dados
             const capacidadeRebocador = parseFloat(document.getElementById("rebocadorCapacidade").value);
             const tempoCiclo = parseFloat(document.getElementById("tempoCiclo").value);
-            const demandaImpressoras = parseFloat(document.getElementById("demandaImpressoras").value);
+            const metragem = parseFloat(document.getElementById("metragem").value);
+            const velocidade = parseFloat(document.getElementById("velocidade").value);
             const demandaCorteCorpo = parseFloat(document.getElementById("demandaCorteCorpo").value);
             const demandaCorteCarrossel = parseFloat(document.getElementById("demandaCorteCarrossel").value);
             const demandaLaminadoras = parseFloat(document.getElementById("demandaLaminadoras").value);
 
-            // Cálculos
+            // Cálculo da demanda das impressoras
+            let demandaImpressoras = 0;
+            if (velocidade > 0) {
+                const divisor = metragem / velocidade;
+                demandaImpressoras = 3 / divisor;
+            }
+
+            // Cálculo da capacidade e demanda total
             const capacidadeRebocadorMin = capacidadeRebocador / tempoCiclo;
             const demandaTotal = demandaImpressoras + demandaCorteCorpo + demandaCorteCarrossel + demandaLaminadoras;
 
             // Atualização dos resultados
+            document.getElementById("demandaImpressoras").innerText = demandaImpressoras.toFixed(3);
             document.getElementById("rebocadorCapacidadeTotal").innerText = capacidadeRebocadorMin.toFixed(3);
             document.getElementById("demandaTotal").innerText = demandaTotal.toFixed(3);
 
