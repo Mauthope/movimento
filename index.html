@@ -6,30 +6,34 @@
   <title>Fluxo Logístico do Rebocador</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: "Arial", sans-serif;
       margin: 0;
       padding: 0;
-      background: #f4f4f9;
+      background: #eef2f7;
       color: #333;
     }
 
     header {
-      background: #0078d7;
-      color: white;
-      padding: 1rem;
+      background: #004aad;
+      color: #fff;
+      padding: 1.5rem;
       text-align: center;
+      box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
     }
 
     main {
+      max-width: 1200px;
+      margin: 2rem auto;
       padding: 1rem;
-      max-width: 900px;
-      margin: auto;
+      background: #fff;
+      box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
     }
 
     .container {
       display: flex;
       flex-wrap: wrap;
-      gap: 1rem;
+      gap: 2rem;
     }
 
     .column {
@@ -39,6 +43,7 @@
 
     h1, h2 {
       margin-bottom: 1rem;
+      color: #004aad;
     }
 
     label {
@@ -48,25 +53,27 @@
     }
 
     input {
-      padding: 0.5rem;
+      padding: 0.6rem;
       margin-bottom: 1rem;
       width: 100%;
       border: 1px solid #ccc;
-      border-radius: 4px;
+      border-radius: 5px;
+      box-shadow: inset 0px 2px 5px rgba(0, 0, 0, 0.1);
     }
 
     button {
-      padding: 0.7rem 1.5rem;
-      background: #0078d7;
+      padding: 0.8rem 1.5rem;
+      background: #004aad;
       color: white;
       border: none;
-      border-radius: 4px;
+      border-radius: 5px;
       cursor: pointer;
       font-size: 1rem;
+      transition: background 0.3s;
     }
 
     button:hover {
-      background: #005bb5;
+      background: #003385;
     }
 
     .result-section {
@@ -81,19 +88,31 @@
     }
 
     #result-table th, #result-table td {
-      border: 1px solid #ccc;
-      padding: 0.5rem;
+      border: 1px solid #ddd;
+      padding: 0.8rem;
       text-align: center;
     }
 
     #result-table th {
-      background: #0078d7;
+      background: #004aad;
       color: white;
     }
 
     #status {
       font-weight: bold;
       margin-top: 1rem;
+      padding: 1rem;
+      border-radius: 5px;
+    }
+
+    #status.success {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    #status.error {
+      background: #f8d7da;
+      color: #721c24;
     }
   </style>
 </head>
@@ -103,7 +122,7 @@
   </header>
   <main>
     <div class="container">
-      <!-- Configurações do Rebocador -->
+      <!-- Configuração do Rebocador -->
       <div class="column">
         <h2>Configuração do Rebocador</h2>
         <label>
@@ -116,19 +135,21 @@
         </label>
       </div>
 
-      <!-- Configurações dos Setores -->
+      <!-- Configuração dos Setores -->
       <div class="column">
         <h2>Configuração dos Setores</h2>
         <div id="sector-configs">
-          <!-- Configurações dinâmicas dos setores -->
+          <!-- Configuração dinâmica dos setores -->
         </div>
-        <button id="add-sector">Adicionar Setor</button>
       </div>
     </div>
+    <div>
+      <button id="calculate">Calcular</button>
+    </div>
 
-    <!-- Resultado -->
+    <!-- Resultados -->
     <section class="result-section">
-      <h2>Resultado</h2>
+      <h2>Resultados</h2>
       <table id="result-table">
         <thead>
           <tr>
@@ -136,12 +157,9 @@
             <th>Consumo (m)</th>
             <th>Velocidade (m/min)</th>
             <th>Bobinas/min</th>
-            <th>Atende?</th>
           </tr>
         </thead>
-        <tbody>
-          <!-- Resultados dinâmicos -->
-        </tbody>
+        <tbody></tbody>
       </table>
       <p id="status"></p>
     </section>
@@ -149,37 +167,22 @@
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       const sectors = [
-        { name: "Impressora", consumption: 0, speed: 0, type: "impressora", quantity: 3 },
-        { name: "Laminadora", consumption: 0, speed: 0, type: "laminadora", quantity: 4 },
-        { name: "Corte 1", consumption: 0, speed: 0 },
-        { name: "Corte 2", consumption: 0, speed: 0 },
-        { name: "F1", consumption: 0, speed: 0 }
+        { name: "Impressoras (1, 2, 3)", consumption: 0, speed: 0, multiplier: 3 },
+        { name: "Laminadoras (1, 2, 3, 4)", consumption: 0, speed: 0, multiplier: 4 },
+        { name: "Corte 1", consumption: 0, speed: 0, multiplier: 1 },
+        { name: "Corte 2", consumption: 0, speed: 0, multiplier: 1 },
+        { name: "F1", consumption: 0, speed: 0, multiplier: 1 },
       ];
 
       const capacityInput = document.getElementById("capacity");
       const cycleTimeInput = document.getElementById("cycleTime");
-      const sectorConfigs = document.getElementById("sector-configs");
       const resultTable = document.querySelector("#result-table tbody");
       const statusText = document.getElementById("status");
 
-      function updateSectorUI() {
+      function createSectorInputs() {
+        const sectorConfigs = document.getElementById("sector-configs");
         sectorConfigs.innerHTML = sectors
-          .map((sector, index) => {
-            if (sector.type === "impressora" || sector.type === "laminadora") {
-              return `
-              <div>
-                <h4>${sector.name}</h4>
-                <label>
-                  Consumo (m):
-                  <input type="number" data-index="${index}" data-key="consumption" value="${sector.consumption}">
-                </label>
-                <label>
-                  Velocidade (m/min):
-                  <input type="number" data-index="${index}" data-key="speed" value="${sector.speed}">
-                </label>
-              </div>`;
-            }
-            return `
+          .map((sector, index) => `
             <div>
               <h4>${sector.name}</h4>
               <label>
@@ -190,24 +193,25 @@
                 Velocidade (m/min):
                 <input type="number" data-index="${index}" data-key="speed" value="${sector.speed}">
               </label>
-            </div>`;
-          })
+            </div>
+          `)
           .join("");
       }
 
       function calculateResults() {
-        const capacity = parseInt(capacityInput.value);
-        const cycleTime = parseInt(cycleTimeInput.value);
+        const capacity = parseFloat(capacityInput.value);
+        const cycleTime = parseFloat(cycleTimeInput.value);
+        const rebocadorBobinasMin = capacity / cycleTime;
 
-        let totalBobinasMin = 0;
+        let totalDemand = 0;
         resultTable.innerHTML = "";
 
         sectors.forEach((sector) => {
           const bobinasMin =
             sector.consumption > 0 && sector.speed > 0
-              ? (sector.consumption / sector.speed) * (sector.quantity || 1)
+              ? (sector.consumption / sector.speed) * sector.multiplier
               : 0;
-          totalBobinasMin += bobinasMin;
+          totalDemand += bobinasMin;
 
           resultTable.innerHTML += `
             <tr>
@@ -215,30 +219,27 @@
               <td>${sector.consumption}</td>
               <td>${sector.speed}</td>
               <td>${bobinasMin.toFixed(2)}</td>
-              <td>${bobinasMin <= (capacity / cycleTime) ? "Sim" : "Não"}</td>
             </tr>
           `;
         });
 
-        statusText.textContent =
-          totalBobinasMin <= (capacity / cycleTime)
-            ? "O rebocador atende os setores."
-            : "O rebocador não atende os setores.";
-        statusText.style.color =
-          totalBobinasMin <= (capacity / cycleTime) ? "green" : "red";
+        if (totalDemand <= rebocadorBobinasMin) {
+          statusText.textContent = `O rebocador atende a demanda. Capacidade: ${rebocadorBobinasMin.toFixed(2)} bobinas/min | Demanda: ${totalDemand.toFixed(2)} bobinas/min.`;
+          statusText.className = "success";
+        } else {
+          statusText.textContent = `O rebocador NÃO atende a demanda. Capacidade: ${rebocadorBobinasMin.toFixed(2)} bobinas/min | Demanda: ${totalDemand.toFixed(2)} bobinas/min.`;
+          statusText.className = "error";
+        }
       }
 
-      sectorConfigs.addEventListener("input", (event) => {
+      document.getElementById("calculate").addEventListener("click", calculateResults);
+
+      createSectorInputs();
+
+      document.getElementById("sector-configs").addEventListener("input", (event) => {
         const { index, key } = event.target.dataset;
-        sectors[index][key] = parseFloat(event.target.value);
-        calculateResults();
+        sectors[index][key] = parseFloat(event.target.value) || 0;
       });
-
-      capacityInput.addEventListener("input", calculateResults);
-      cycleTimeInput.addEventListener("input", calculateResults);
-
-      updateSectorUI();
-      calculateResults();
     });
   </script>
 </body>
