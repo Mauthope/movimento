@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Fluxo Logístico do Rebocador</title>
+  <title>Distribuição de Bobinas por Viagem</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -116,7 +116,7 @@
 </head>
 <body>
   <header>
-    Fluxo Logístico do Rebocador
+    Distribuição de Bobinas por Viagem
   </header>
   <main>
     <div class="container">
@@ -136,15 +136,15 @@
         <div id="sector-configs"></div>
       </div>
     </div>
-    <button id="calculate">Calcular</button>
+    <button id="calculate">Calcular Distribuição</button>
     <section class="result-section">
       <h2>Resultados</h2>
       <table id="result-table">
         <thead>
           <tr>
             <th>Setor</th>
-            <th>Dados de Consumo</th>
             <th>Demanda (bobinas/min)</th>
+            <th>Distribuição por Viagem (bobinas)</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -216,26 +216,29 @@
             totalBobinasPerMin = sector.bobinasPerHour / 60;
           } else {
             const timePerBobina = sector.consumption / sector.speed; // Tempo para consumir uma bobina
-            totalBobinasPerMin = 1 / timePerBobina * sector.multiplier; // Demanda ajustada por multiplicador
+            totalBobinasPerMin = 1 / timePerBobina; // Convertendo para bobinas por minuto
           }
 
           totalDemand += totalBobinasPerMin;
 
+          const sectorDistribution = (totalBobinasPerMin / totalDemand) * rebocadorBobinasMin;
           resultTable.innerHTML += `
             <tr>
               <td>${sector.name}</td>
-              <td>${sector.isBobinasPerHour ? sector.bobinasPerHour + " bobinas/h" : sector.consumption + " m, " + sector.speed + " m/min"}</td>
               <td>${totalBobinasPerMin.toFixed(4)}</td>
+              <td>${sectorDistribution.toFixed(2)}</td>
             </tr>
           `;
         });
 
         if (totalDemand <= rebocadorBobinasMin) {
-          statusText.textContent = `O rebocador atende a demanda. Capacidade: ${rebocadorBobinasMin.toFixed(4)} bobinas/min | Demanda: ${totalDemand.toFixed(4)} bobinas/min.`;
-          statusText.className = "success";
+          statusText.textContent = "Capacidade do rebocador atende à demanda!";
+          statusText.classList.add("success");
+          statusText.classList.remove("error");
         } else {
-          statusText.textContent = `O rebocador NÃO atende a demanda. Capacidade: ${rebocadorBobinasMin.toFixed(4)} bobinas/min | Demanda: ${totalDemand.toFixed(4)} bobinas/min.`;
-          statusText.className = "error";
+          statusText.textContent = "A demanda excede a capacidade do rebocador!";
+          statusText.classList.add("error");
+          statusText.classList.remove("success");
         }
       });
     });
