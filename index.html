@@ -6,28 +6,28 @@
   <title>Fluxo Logístico do Rebocador</title>
   <style>
     body {
-      font-family: "Arial", sans-serif;
+      font-family: Arial, sans-serif;
       margin: 0;
       padding: 0;
-      background: #eef2f7;
+      background-color: #f4f4f9;
       color: #333;
     }
 
     header {
-      background: #004aad;
-      color: #fff;
+      background-color: #004aad;
+      color: white;
       padding: 1.5rem;
       text-align: center;
-      box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
+      font-size: 1.5rem;
     }
 
     main {
       max-width: 1200px;
       margin: 2rem auto;
       padding: 1rem;
-      background: #fff;
+      background-color: white;
       box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-      border-radius: 8px;
+      border-radius: 10px;
     }
 
     .container {
@@ -41,7 +41,7 @@
       min-width: 300px;
     }
 
-    h1, h2 {
+    h2 {
       margin-bottom: 1rem;
       color: #004aad;
     }
@@ -53,27 +53,25 @@
     }
 
     input {
-      padding: 0.6rem;
+      padding: 0.5rem;
       margin-bottom: 1rem;
       width: 100%;
       border: 1px solid #ccc;
       border-radius: 5px;
-      box-shadow: inset 0px 2px 5px rgba(0, 0, 0, 0.1);
     }
 
     button {
-      padding: 0.8rem 1.5rem;
-      background: #004aad;
+      padding: 0.7rem 1.5rem;
+      background-color: #004aad;
       color: white;
       border: none;
       border-radius: 5px;
       cursor: pointer;
-      font-size: 1rem;
-      transition: background 0.3s;
+      transition: background-color 0.3s;
     }
 
     button:hover {
-      background: #003385;
+      background-color: #003380;
     }
 
     .result-section {
@@ -94,7 +92,7 @@
     }
 
     #result-table th {
-      background: #004aad;
+      background-color: #004aad;
       color: white;
     }
 
@@ -106,57 +104,48 @@
     }
 
     #status.success {
-      background: #d4edda;
+      background-color: #d4edda;
       color: #155724;
     }
 
     #status.error {
-      background: #f8d7da;
+      background-color: #f8d7da;
       color: #721c24;
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>Fluxo Logístico do Rebocador</h1>
+    Fluxo Logístico do Rebocador
   </header>
   <main>
     <div class="container">
-      <!-- Configuração do Rebocador -->
       <div class="column">
         <h2>Configuração do Rebocador</h2>
         <label>
           Capacidade Máxima (bobinas):
-          <input type="number" id="capacity" value="6" min="1" max="10">
+          <input type="number" id="capacity" value="6" min="1">
         </label>
         <label>
           Tempo de Ciclo (min):
-          <input type="number" id="cycleTime" value="15" min="5" max="60">
+          <input type="number" id="cycleTime" value="15" min="1">
         </label>
       </div>
-
-      <!-- Configuração dos Setores -->
       <div class="column">
         <h2>Configuração dos Setores</h2>
-        <div id="sector-configs">
-          <!-- Configuração dinâmica dos setores -->
-        </div>
+        <div id="sector-configs"></div>
       </div>
     </div>
-    <div>
-      <button id="calculate">Calcular</button>
-    </div>
-
-    <!-- Resultados -->
+    <button id="calculate">Calcular</button>
     <section class="result-section">
       <h2>Resultados</h2>
       <table id="result-table">
         <thead>
           <tr>
             <th>Setor</th>
-            <th>Consumo (m)</th>
+            <th>Comprimento da Bobina (m)</th>
             <th>Velocidade (m/min)</th>
-            <th>Bobinas/min</th>
+            <th>Demanda (bobinas/min)</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -167,38 +156,41 @@
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       const sectors = [
-        { name: "Impressoras (1, 2, 3)", consumption: 0, speed: 0, multiplier: 3 },
-        { name: "Laminadoras (1, 2, 3, 4)", consumption: 0, speed: 0, multiplier: 4 },
-        { name: "Corte 1", consumption: 0, speed: 0, multiplier: 1 },
-        { name: "Corte 2", consumption: 0, speed: 0, multiplier: 1 },
-        { name: "F1", consumption: 0, speed: 0, multiplier: 1 },
+        { name: "Impressoras (1, 2, 3)", consumption: 3000, speed: 212, multiplier: 3 },
+        { name: "Laminadoras (1, 2, 3, 4)", consumption: 4000, speed: 150, multiplier: 4 },
+        { name: "Corte 1", consumption: 1500, speed: 100, multiplier: 1 },
+        { name: "Corte 2", consumption: 2000, speed: 120, multiplier: 1 },
+        { name: "F1", consumption: 2500, speed: 180, multiplier: 1 },
       ];
 
+      const sectorConfigs = document.getElementById("sector-configs");
       const capacityInput = document.getElementById("capacity");
       const cycleTimeInput = document.getElementById("cycleTime");
       const resultTable = document.querySelector("#result-table tbody");
       const statusText = document.getElementById("status");
 
-      function createSectorInputs() {
-        const sectorConfigs = document.getElementById("sector-configs");
-        sectorConfigs.innerHTML = sectors
-          .map((sector, index) => `
-            <div>
-              <h4>${sector.name}</h4>
-              <label>
-                Consumo (m):
-                <input type="number" data-index="${index}" data-key="consumption" value="${sector.consumption}">
-              </label>
-              <label>
-                Velocidade (m/min):
-                <input type="number" data-index="${index}" data-key="speed" value="${sector.speed}">
-              </label>
-            </div>
-          `)
-          .join("");
-      }
+      // Render inputs for sectors
+      sectors.forEach((sector, index) => {
+        sectorConfigs.innerHTML += `
+          <div>
+            <h4>${sector.name}</h4>
+            <label>Comprimento da Bobina (m):
+              <input type="number" value="${sector.consumption}" data-index="${index}" data-key="consumption">
+            </label>
+            <label>Velocidade (m/min):
+              <input type="number" value="${sector.speed}" data-index="${index}" data-key="speed">
+            </label>
+          </div>
+        `;
+      });
 
-      function calculateResults() {
+      sectorConfigs.addEventListener("input", (event) => {
+        const index = event.target.dataset.index;
+        const key = event.target.dataset.key;
+        sectors[index][key] = parseFloat(event.target.value) || 0;
+      });
+
+      document.getElementById("calculate").addEventListener("click", () => {
         const capacity = parseFloat(capacityInput.value);
         const cycleTime = parseFloat(cycleTimeInput.value);
         const rebocadorBobinasMin = capacity / cycleTime;
@@ -207,38 +199,29 @@
         resultTable.innerHTML = "";
 
         sectors.forEach((sector) => {
-          const bobinasMin =
-            sector.consumption > 0 && sector.speed > 0
-              ? (sector.consumption / sector.speed) * sector.multiplier
-              : 0;
-          totalDemand += bobinasMin;
+          const timePerBobina = sector.consumption / sector.speed; // Minutes to consume one bobina
+          const bobinasPerMin = 1 / timePerBobina; // Bobinas consumed per minute
+          const totalBobinasPerMin = bobinasPerMin * sector.multiplier; // Adjusted by multiplier
+
+          totalDemand += totalBobinasPerMin;
 
           resultTable.innerHTML += `
             <tr>
               <td>${sector.name}</td>
               <td>${sector.consumption}</td>
               <td>${sector.speed}</td>
-              <td>${bobinasMin.toFixed(2)}</td>
+              <td>${totalBobinasPerMin.toFixed(4)}</td>
             </tr>
           `;
         });
 
         if (totalDemand <= rebocadorBobinasMin) {
-          statusText.textContent = `O rebocador atende a demanda. Capacidade: ${rebocadorBobinasMin.toFixed(2)} bobinas/min | Demanda: ${totalDemand.toFixed(2)} bobinas/min.`;
+          statusText.textContent = `O rebocador atende a demanda. Capacidade: ${rebocadorBobinasMin.toFixed(4)} bobinas/min | Demanda: ${totalDemand.toFixed(4)} bobinas/min.`;
           statusText.className = "success";
         } else {
-          statusText.textContent = `O rebocador NÃO atende a demanda. Capacidade: ${rebocadorBobinasMin.toFixed(2)} bobinas/min | Demanda: ${totalDemand.toFixed(2)} bobinas/min.`;
+          statusText.textContent = `O rebocador NÃO atende a demanda. Capacidade: ${rebocadorBobinasMin.toFixed(4)} bobinas/min | Demanda: ${totalDemand.toFixed(4)} bobinas/min.`;
           statusText.className = "error";
         }
-      }
-
-      document.getElementById("calculate").addEventListener("click", calculateResults);
-
-      createSectorInputs();
-
-      document.getElementById("sector-configs").addEventListener("input", (event) => {
-        const { index, key } = event.target.dataset;
-        sectors[index][key] = parseFloat(event.target.value) || 0;
       });
     });
   </script>
