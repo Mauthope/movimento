@@ -96,6 +96,23 @@
       color: white;
     }
 
+    #distribution-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 2rem;
+    }
+
+    #distribution-table th, #distribution-table td {
+      border: 1px solid #ddd;
+      padding: 0.8rem;
+      text-align: center;
+    }
+
+    #distribution-table th {
+      background-color: #004aad;
+      color: white;
+    }
+
     #status {
       font-weight: bold;
       margin-top: 1rem;
@@ -111,23 +128,6 @@
     #status.error {
       background-color: #f8d7da;
       color: #721c24;
-    }
-
-    .distribution-table {
-      margin-top: 2rem;
-      width: 100%;
-      border-collapse: collapse;
-    }
-
-    .distribution-table th, .distribution-table td {
-      border: 1px solid #ddd;
-      padding: 0.8rem;
-      text-align: center;
-    }
-
-    .distribution-table th {
-      background-color: #004aad;
-      color: white;
     }
   </style>
 </head>
@@ -166,16 +166,12 @@
         </thead>
         <tbody></tbody>
       </table>
-      <p id="status"></p>
-    </section>
-    <section class="distribution-section">
-      <h2>Distribuição por Viagem</h2>
-      <table id="distribution-table" class="distribution-table">
+      <table id="distribution-table">
         <thead>
           <tr>
             <th>Viagem</th>
-            <th>Impressoras</th>
-            <th>Laminadoras</th>
+            <th>Impressoras (1, 2, 3)</th>
+            <th>Laminadoras (1, 2, 3, 4)</th>
             <th>Corte 1</th>
             <th>Corte 2</th>
             <th>F1</th>
@@ -183,6 +179,7 @@
         </thead>
         <tbody></tbody>
       </table>
+      <p id="status"></p>
     </section>
   </main>
   <script>
@@ -199,8 +196,8 @@
       const capacityInput = document.getElementById("capacity");
       const cycleTimeInput = document.getElementById("cycleTime");
       const resultTable = document.querySelector("#result-table tbody");
-      const statusText = document.getElementById("status");
       const distributionTable = document.querySelector("#distribution-table tbody");
+      const statusText = document.getElementById("status");
 
       // Render inputs for sectors
       sectors.forEach((sector, index) => {
@@ -235,81 +232,91 @@
       });
 
       document.getElementById("calculate").addEventListener("click", () => {
-        const capacity = parseFloat(capacityInput.value);
-        const cycleTime = parseFloat(cycleTimeInput.value);
-        const rebocadorBobinasMin = capacity / cycleTime;
-
-        let totalDemand = 0;
+        // Clean previous results
         resultTable.innerHTML = "";
-        let sectorDemands = [];
+        distributionTable.innerHTML = "";
+        statusText.textContent = "";
+        
+        const rebocadorCapacity = parseFloat(capacityInput.value) || 0;
+        const cycleTime = parseFloat(cycleTimeInput.value) || 0;
 
-        sectors.forEach((sector) => {
-          let totalBobinasPerMin = 0;
-
-          if (sector.isBobinasPerHour) {
-            // Calculando demanda para F1 (Número de bobinas por hora dividido por 60)
-            totalBobinasPerMin = sector.bobinasPerHour / 60;
+        let totalDemandPerMinute = 0;
+        sectors.forEach(sector => {
+          if (!sector.isBobinasPerHour) {
+            // Calcula demanda por bobina por minuto
+            const bobinasPerMinute = (sector.consumption / sector.speed) / 60;
+            totalDemandPerMinute += bobinasPerMinute * sector.multiplier;
           } else {
-            // Calculando demanda para outros setores (Comprimento / Velocidade)
-            totalBobinasPerMin = (sector.consumption / sector.speed) / 1000; // Bobinas por minuto
+            // Usa o valor diretamente para F1
+            totalDemandPerMinute += sector.bobinasPerHour / 60;
           }
-
-          sectorDemands.push(totalBobinasPerMin);
-          totalDemand += totalBobinasPerMin;
-
-          const row = `<tr>
-                        <td>${sector.name}</td>
-                        <td>Consumo: ${sector.consumption}m, Velocidade: ${sector.speed}m/min</td>
-                        <td>${totalBobinasPerMin.toFixed(4)} bobinas/min</td>
-                      </tr>`;
-          resultTable.innerHTML += row;
         });
 
-        // Verificando se o rebocador consegue atender a demanda
-        if (totalDemand <= rebocadorBobinasMin) {
-          statusText.textContent = "O rebocador pode atender todos os setores!";
+        const rebocadorCapacityPerMinute = rebocadorCapacity / cycleTime;
+
+        if (totalDemandPerMinute <= rebocadorCapacityPerMinute) {
+          statusText.textContent = "O rebocador tem capacidade suficiente!";
           statusText.className = "success";
         } else {
-          statusText.textContent = "A demanda é maior do que a capacidade do rebocador!";
+          statusText.textContent = "A capacidade do rebocador não é suficiente.";
           statusText.className = "error";
         }
 
-        // Distribuição por viagem
-        let trip = 1;
-        let tripData = [];
-        let remainingBobinas = [...sectorDemands];
+        // Populate result table
+        sectors.forEach(sector => {
+          const tr = document.createElement("tr");
+          if (sector.isBobinasPerHour) {
+            const bobinasPerMinute = sector.bobinasPerHour / 60;
+            tr.innerHTML = `<td>${sector.name}</td><td>Bobinas por Hora: ${sector.bobinasPerHour}</td><td>${bobinasPerMinute.toFixed(4)}</td>`;
+          } else {
+            const bobinasPerMinute = (sector.consumption / sector.speed) / 60;
+            tr.innerHTML = `<td>${sector.name}</td><td>${sector.consumption}m, ${sector.speed}m/min</td><td>${bobinasPerMinute.toFixed(4)}</td>`;
+          }
+          resultTable.appendChild(tr);
+        });
 
-        while (remainingBobinas.some(bobinas => bobinas > 0)) {
-          let tripRow = [trip];
+        // Calculate and populate distribution table
+        let travelCounter = 1;
+        let remainingDemand = [...sectors];
+        let trips = [];
+        while (remainingDemand.some(demand => demand.isBobinasPerHour || demand.consumption > 0)) {
+          let trip = [];
           let totalBobinas = 0;
 
-          sectors.forEach((sector, index) => {
-            if (remainingBobinas[index] > 0) {
-              if (remainingBobinas[index] > 0) {
-                remainingBobinas[index] -= Math.min(remainingBobinas[index], rebocadorBobinasMin / sectors.length);
-                tripRow.push(1);
-                totalBobinas++;
-              } else {
-                tripRow.push(0);
+          remainingDemand.forEach((sector, index) => {
+            let bobinasForTrip = 0;
+            if (sector.isBobinasPerHour) {
+              bobinasForTrip = sector.bobinasPerHour / 60;
+            } else {
+              bobinasForTrip = (sector.consumption / sector.speed) / 60;
+            }
+
+            if (totalBobinas + bobinasForTrip <= rebocadorCapacityPerMinute) {
+              trip.push(1);
+              totalBobinas += bobinasForTrip;
+              if (!sector.isBobinasPerHour) {
+                sector.consumption -= bobinasForTrip;
               }
+            } else {
+              trip.push(0);
             }
           });
 
-          tripData.push(tripRow);
-          trip++;
+          trips.push(trip);
+          remainingDemand.forEach((sector, index) => {
+            if (trip[index] === 1 && sector.isBobinasPerHour) {
+              sector.bobinasPerHour = 0;
+            }
+          });
+
+          travelCounter++;
         }
 
-        // Preenchendo tabela de distribuição
-        distributionTable.innerHTML = tripData.map(row => {
-          return `<tr>
-                    <td>${row[0]}</td>
-                    <td>${row[1]}</td>
-                    <td>${row[2]}</td>
-                    <td>${row[3]}</td>
-                    <td>${row[4]}</td>
-                    <td>${row[5]}</td>
-                  </tr>`;
-        }).join("");
+        trips.forEach((trip, index) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `<td>${index + 1}</td><td>${trip[0]}</td><td>${trip[1]}</td><td>${trip[2]}</td><td>${trip[3]}</td><td>${trip[4]}</td>`;
+          distributionTable.appendChild(tr);
+        });
       });
     });
   </script>
