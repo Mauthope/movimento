@@ -1,137 +1,192 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simulação Logística</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-        }
-        label {
-            display: block;
-            margin-top: 10px;
-        }
-        input {
-            width: 100%;
-            padding: 5px;
-            margin-bottom: 10px;
-        }
-        .output {
-            margin-top: 20px;
-            padding: 10px;
-            background-color: #f0f0f0;
-            border-radius: 5px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fluxo Logístico do Rebocador</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
+    <style>
+        /* styles.css */
+body {
+  font-family: 'Arial', sans-serif;
+  margin: 0;
+  padding: 0;
+  background: #f4f4f9;
+  color: #333;
+}
+
+header {
+  background: #0078d7;
+  color: white;
+  padding: 1rem;
+  text-align: center;
+}
+
+main {
+  padding: 1rem;
+  max-width: 900px;
+  margin: auto;
+}
+
+h1, h2 {
+  margin-bottom: 1rem;
+}
+
+label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: bold;
+}
+
+input {
+  padding: 0.5rem;
+  margin-bottom: 1rem;
+  width: 100%;
+  max-width: 300px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+button {
+  padding: 0.7rem 1.5rem;
+  background: #0078d7;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+button:hover {
+  background: #005bb5;
+}
+
+.result-section {
+  margin-top: 2rem;
+  text-align: center;
+}
+
+#result-chart {
+  width: 100%;
+  max-width: 700px;
+  margin: auto;
+}
+
+#status {
+  font-weight: bold;
+  margin-top: 1rem;
+}
+
+    </style>
 <body>
-    <h1>Simulação Logística</h1>
-    <p>Altere os valores abaixo e veja se o rebocador consegue atender à demanda.</p>
-
-    <!-- Entrada de dados -->
-    <label for="rebocadorCapacidade">Capacidade do rebocador (bobinas/viagem):</label>
-    <input type="number" id="rebocadorCapacidade" value="6" step="1" min="1">
-
-    <label for="tempoCiclo">Tempo de ciclo do rebocador (min):</label>
-    <input type="number" id="tempoCiclo" value="15" step="1" min="1">
-
-    <!-- Impressoras -->
-    <h2>Impressoras</h2>
-    <label for="metragemImpressoras">Metragem (m):</label>
-    <input type="number" id="metragemImpressoras" value="100" step="1" min="1">
-
-    <label for="velocidadeImpressoras">Velocidade (m/min):</label>
-    <input type="number" id="velocidadeImpressoras" value="20" step="1" min="1">
-
-    <!-- Corte Corpo -->
-    <h2>Corte Corpo</h2>
-    <label for="metragemCorteCorpo">Metragem (m):</label>
-    <input type="number" id="metragemCorteCorpo" value="1000" step="1" min="1">
-
-    <label for="velocidadeCorteCorpo">Velocidade (m/min):</label>
-    <input type="number" id="velocidadeCorteCorpo" value="167" step="1" min="1">
-
-    <!-- Corte Carrossel -->
-    <h2>Corte Carrossel</h2>
-    <label for="metragemCorteCarrossel">Metragem (m):</label>
-    <input type="number" id="metragemCorteCarrossel" value="1000" step="1" min="1">
-
-    <label for="velocidadeCorteCarrossel">Velocidade (m/min):</label>
-    <input type="number" id="velocidadeCorteCarrossel" value="75" step="1" min="1">
-
-    <!-- Laminadoras -->
-    <h2>Laminadoras</h2>
-    <label for="metragemLaminadoras">Metragem (m):</label>
-    <input type="number" id="metragemLaminadoras" value="100" step="1" min="1">
-
-    <label for="velocidadeLaminadoras">Velocidade (m/min):</label>
-    <input type="number" id="velocidadeLaminadoras" value="18" step="1" min="1">
-
-    <!-- Resultados -->
-    <div class="output">
-        <h2>Resultados</h2>
-        <p><strong>Demanda das Impressoras:</strong> <span id="demandaImpressoras"></span> bobinas/hora</p>
-        <p><strong>Demanda do Corte Corpo:</strong> <span id="demandaCorteCorpo"></span> bobinas/hora</p>
-        <p><strong>Demanda do Corte Carrossel:</strong> <span id="demandaCorteCarrossel"></span> bobinas/hora</p>
-        <p><strong>Demanda das Laminadoras:</strong> <span id="demandaLaminadoras"></span> bobinas/hora</p>
-        <p><strong>Capacidade do Rebocador:</strong> <span id="rebocadorCapacidadeTotal"></span> bobinas/hora</p>
-        <p><strong>Demanda Total:</strong> <span id="demandaTotal"></span> bobinas/hora</p>
-        <p><strong>Status:</strong> <span id="status"></span></p>
-    </div>
-
+  <header>
+    <h1>Fluxo Logístico do Rebocador</h1>
+  </header>
+  <main>
+    <section class="config-section">
+      <h2>Configuração do Rebocador</h2>
+      <label>
+        Capacidade Máxima (bobinas):
+        <input type="number" id="capacity" value="6" min="1" max="10">
+      </label>
+      <label>
+        Tempo de Ciclo (min):
+        <input type="number" id="cycleTime" value="15" min="5" max="60">
+      </label>
+    </section>
+    <section class="sector-section">
+      <h2>Configuração dos Setores</h2>
+      <div id="sector-configs">
+        <!-- Configurações dinâmicas dos setores serão inseridas aqui -->
+      </div>
+      <button id="add-sector">Adicionar Setor</button>
+    </section>
+    <section class="result-section">
+      <h2>Resultado</h2>
+      <div id="result-chart">
+        <!-- Gráfico será inserido aqui -->
+      </div>
+      <p id="status"></p>
+    </section>
+  </main>
+  <script src="script.js"></script>
     <script>
-        function calcular() {
-            // Entrada de dados do rebocador
-            const capacidadeRebocador = parseFloat(document.getElementById("rebocadorCapacidade").value);
-            const tempoCiclo = parseFloat(document.getElementById("tempoCiclo").value);
+        // script.js
+document.addEventListener("DOMContentLoaded", () => {
+  const sectors = [
+    { name: "Impressão", consumption: 0, speed: 0 },
+    { name: "Laminação", consumption: 0, speed: 0 },
+    { name: "Corte 1", consumption: 0, speed: 0 },
+    { name: "Corte 2", consumption: 0, speed: 0 },
+    { name: "F1", consumption: 0, speed: 0 },
+  ];
 
-            // Impressoras
-            const metragemImpressoras = parseFloat(document.getElementById("metragemImpressoras").value);
-            const velocidadeImpressoras = parseFloat(document.getElementById("velocidadeImpressoras").value);
-            const demandaImpressoras = velocidadeImpressoras > 0 ? (3 / (metragemImpressoras / velocidadeImpressoras)) * 60 : 0;
+  const capacityInput = document.getElementById("capacity");
+  const cycleTimeInput = document.getElementById("cycleTime");
+  const sectorConfigs = document.getElementById("sector-configs");
+  const addSectorButton = document.getElementById("add-sector");
+  const resultChart = document.getElementById("result-chart");
+  const statusText = document.getElementById("status");
 
-            // Corte Corpo
-            const metragemCorteCorpo = parseFloat(document.getElementById("metragemCorteCorpo").value);
-            const velocidadeCorteCorpo = parseFloat(document.getElementById("velocidadeCorteCorpo").value);
-            const demandaCorteCorpo = velocidadeCorteCorpo > 0 ? (1 / (metragemCorteCorpo / velocidadeCorteCorpo)) * 60 : 0;
+  function updateSectorUI() {
+    sectorConfigs.innerHTML = sectors
+      .map(
+        (sector, index) => `
+        <div class="sector-config">
+          <h3>${sector.name}</h3>
+          <label>
+            Consumo (m):
+            <input type="number" data-index="${index}" data-key="consumption" value="${sector.consumption}">
+          </label>
+          <label>
+            Velocidade (m/min):
+            <input type="number" data-index="${index}" data-key="speed" value="${sector.speed}">
+          </label>
+        </div>`
+      )
+      .join("");
+  }
 
-            // Corte Carrossel
-            const metragemCorteCarrossel = parseFloat(document.getElementById("metragemCorteCarrossel").value);
-            const velocidadeCorteCarrossel = parseFloat(document.getElementById("velocidadeCorteCarrossel").value);
-            const demandaCorteCarrossel = velocidadeCorteCarrossel > 0 ? (1 / (metragemCorteCarrossel / velocidadeCorteCarrossel)) * 60 : 0;
+  function calculateResults() {
+    const capacity = parseInt(capacityInput.value);
+    const cycleTime = parseInt(cycleTimeInput.value);
 
-            // Laminadoras
-            const metragemLaminadoras = parseFloat(document.getElementById("metragemLaminadoras").value);
-            const velocidadeLaminadoras = parseFloat(document.getElementById("velocidadeLaminadoras").value);
-            const demandaLaminadoras = velocidadeLaminadoras > 0 ? (4 / (metragemLaminadoras / velocidadeLaminadoras)) * 60 : 0;
+    let totalTime = 0;
 
-            // Capacidade e demanda total
-            const capacidadeRebocadorHora = (capacidadeRebocador / tempoCiclo) * 60;
-            const demandaTotal = demandaImpressoras + demandaCorteCorpo + demandaCorteCarrossel + demandaLaminadoras;
+    sectors.forEach((sector) => {
+      if (sector.consumption > 0 && sector.speed > 0) {
+        totalTime += sector.consumption / sector.speed;
+      }
+    });
 
-            // Atualização dos resultados
-            document.getElementById("demandaImpressoras").innerText = demandaImpressoras.toFixed(2);
-            document.getElementById("demandaCorteCorpo").innerText = demandaCorteCorpo.toFixed(2);
-            document.getElementById("demandaCorteCarrossel").innerText = demandaCorteCarrossel.toFixed(2);
-            document.getElementById("demandaLaminadoras").innerText = demandaLaminadoras.toFixed(2);
-            document.getElementById("rebocadorCapacidadeTotal").innerText = capacidadeRebocadorHora.toFixed(2);
-            document.getElementById("demandaTotal").innerText = demandaTotal.toFixed(2);
+    const cyclesNeeded = Math.ceil(totalTime / cycleTime);
+    const exceedsCapacity = cyclesNeeded > capacity;
 
-            // Status
-            const status = capacidadeRebocadorHora >= demandaTotal ? "Atende à demanda" : "Não atende à demanda";
-            document.getElementById("status").innerText = status;
-            document.getElementById("status").style.color = capacidadeRebocadorHora >= demandaTotal ? "green" : "red";
-        }
+    resultChart.innerHTML = `Ciclos necessários: ${cyclesNeeded}`;
+    statusText.textContent = exceedsCapacity
+      ? "O rebocador não atende os setores."
+      : "O rebocador atende os setores.";
+    statusText.style.color = exceedsCapacity ? "red" : "green";
+  }
 
-        // Adiciona eventos para recalcular quando os valores mudam
-        document.querySelectorAll("input").forEach(input => {
-            input.addEventListener("input", calcular);
-        });
+  sectorConfigs.addEventListener("input", (event) => {
+    const { index, key } = event.target.dataset;
+    sectors[index][key] = parseFloat(event.target.value);
+    calculateResults();
+  });
 
-        // Cálculo inicial
-        calcular();
+  capacityInput.addEventListener("input", calculateResults);
+  cycleTimeInput.addEventListener("input", calculateResults);
+  addSectorButton.addEventListener("click", () => {
+    sectors.push({ name: `Setor ${sectors.length + 1}`, consumption: 0, speed: 0 });
+    updateSectorUI();
+  });
+
+  updateSectorUI();
+  calculateResults();
+});
+
     </script>
 </body>
 </html>
