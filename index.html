@@ -119,10 +119,22 @@
       <!-- Configurações dos Setores -->
       <div class="column">
         <h2>Configuração dos Setores</h2>
-        <div id="sector-configs">
-          <!-- Configurações dinâmicas dos setores -->
-        </div>
-        <button id="add-sector">Adicionar Setor</button>
+        <label>
+          Consumo total das Impressoras (m):
+          <input type="number" id="printer-consumption" value="0">
+        </label>
+        <label>
+          Velocidade das Impressoras (m/min):
+          <input type="number" id="printer-speed" value="0">
+        </label>
+        <label>
+          Consumo total das Laminadoras (m):
+          <input type="number" id="laminator-consumption" value="0">
+        </label>
+        <label>
+          Velocidade das Laminadoras (m/min):
+          <input type="number" id="laminator-speed" value="0">
+        </label>
       </div>
     </div>
 
@@ -148,84 +160,58 @@
   </main>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
-      const sectors = [
-        { name: "Impressora 1", consumption: 0, speed: 0 },
-        { name: "Impressora 2", consumption: 0, speed: 0 },
-        { name: "Impressora 3", consumption: 0, speed: 0 },
-        { name: "Laminadora 1", consumption: 0, speed: 0 },
-        { name: "Laminadora 2", consumption: 0, speed: 0 },
-        { name: "Laminadora 3", consumption: 0, speed: 0 },
-        { name: "Laminadora 4", consumption: 0, speed: 0 },
-      ];
-
       const capacityInput = document.getElementById("capacity");
       const cycleTimeInput = document.getElementById("cycleTime");
-      const sectorConfigs = document.getElementById("sector-configs");
+      const printerConsumptionInput = document.getElementById("printer-consumption");
+      const printerSpeedInput = document.getElementById("printer-speed");
+      const laminatorConsumptionInput = document.getElementById("laminator-consumption");
+      const laminatorSpeedInput = document.getElementById("laminator-speed");
       const resultTable = document.querySelector("#result-table tbody");
       const statusText = document.getElementById("status");
-
-      function updateSectorUI() {
-        sectorConfigs.innerHTML = sectors
-          .map(
-            (sector, index) => `
-          <div>
-            <h4>${sector.name}</h4>
-            <label>
-              Consumo (m):
-              <input type="number" data-index="${index}" data-key="consumption" value="${sector.consumption}">
-            </label>
-            <label>
-              Velocidade (m/min):
-              <input type="number" data-index="${index}" data-key="speed" value="${sector.speed}">
-            </label>
-          </div>`
-          )
-          .join("");
-      }
 
       function calculateResults() {
         const capacity = parseInt(capacityInput.value);
         const cycleTime = parseInt(cycleTimeInput.value);
+        const printerConsumption = parseFloat(printerConsumptionInput.value);
+        const printerSpeed = parseFloat(printerSpeedInput.value);
+        const laminatorConsumption = parseFloat(laminatorConsumptionInput.value);
+        const laminatorSpeed = parseFloat(laminatorSpeedInput.value);
 
-        let totalBobinasMin = 0;
-        resultTable.innerHTML = "";
+        const printerBobinasMin = printerSpeed > 0 ? (printerConsumption / printerSpeed) / 3 : 0;
+        const laminatorBobinasMin = laminatorSpeed > 0 ? (laminatorConsumption / laminatorSpeed) / 4 : 0;
 
-        sectors.forEach((sector) => {
-          const bobinasMin =
-            sector.consumption > 0 && sector.speed > 0
-              ? sector.consumption / sector.speed
-              : 0;
-          totalBobinasMin += bobinasMin;
+        const totalBobinasMin = printerBobinasMin + laminatorBobinasMin;
+        const maxBobinasPerCycle = (capacity / cycleTime);
 
-          resultTable.innerHTML += `
-            <tr>
-              <td>${sector.name}</td>
-              <td>${sector.consumption}</td>
-              <td>${sector.speed}</td>
-              <td>${bobinasMin.toFixed(2)}</td>
-              <td>${bobinasMin <= capacity / cycleTime ? "Sim" : "Não"}</td>
-            </tr>
-          `;
-        });
+        resultTable.innerHTML = `
+          <tr>
+            <td>Impressoras</td>
+            <td>${printerConsumption}</td>
+            <td>${printerSpeed}</td>
+            <td>${printerBobinasMin.toFixed(2)}</td>
+            <td>${printerBobinasMin <= maxBobinasPerCycle ? "Sim" : "Não"}</td>
+          </tr>
+          <tr>
+            <td>Laminadoras</td>
+            <td>${laminatorConsumption}</td>
+            <td>${laminatorSpeed}</td>
+            <td>${laminatorBobinasMin.toFixed(2)}</td>
+            <td>${laminatorBobinasMin <= maxBobinasPerCycle ? "Sim" : "Não"}</td>
+          </tr>
+        `;
 
         statusText.textContent =
-          totalBobinasMin <= capacity / cycleTime
+          totalBobinasMin <= maxBobinasPerCycle
             ? "O rebocador atende os setores."
             : "O rebocador não atende os setores.";
         statusText.style.color =
-          totalBobinasMin <= capacity / cycleTime ? "green" : "red";
+          totalBobinasMin <= maxBobinasPerCycle ? "green" : "red";
       }
 
-      sectorConfigs.addEventListener("input", (event) => {
-        const { index, key } = event.target.dataset;
-        sectors[index][key] = parseFloat(event.target.value);
-        calculateResults();
+      [capacityInput, cycleTimeInput, printerConsumptionInput, printerSpeedInput, laminatorConsumptionInput, laminatorSpeedInput].forEach((input) => {
+        input.addEventListener("input", calculateResults);
       });
 
-      capacityInput.addEventListener("input", calculateResults);
-      cycleTimeInput.addEventListener("input", calculateResults);
-
-      updateSectorUI();
       calculateResults();
     });
   </script>
