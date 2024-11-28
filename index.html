@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Distribuição de Bobinas por Viagem</title>
+  <title>Fluxo Logístico do Rebocador</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -112,11 +112,28 @@
       background-color: #f8d7da;
       color: #721c24;
     }
+
+    .distribution-table {
+      margin-top: 2rem;
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .distribution-table th, .distribution-table td {
+      border: 1px solid #ddd;
+      padding: 0.8rem;
+      text-align: center;
+    }
+
+    .distribution-table th {
+      background-color: #004aad;
+      color: white;
+    }
   </style>
 </head>
 <body>
   <header>
-    Distribuição de Bobinas por Viagem
+    Fluxo Logístico do Rebocador
   </header>
   <main>
     <div class="container">
@@ -136,20 +153,36 @@
         <div id="sector-configs"></div>
       </div>
     </div>
-    <button id="calculate">Calcular Distribuição</button>
+    <button id="calculate">Calcular</button>
     <section class="result-section">
       <h2>Resultados</h2>
       <table id="result-table">
         <thead>
           <tr>
             <th>Setor</th>
+            <th>Dados de Consumo</th>
             <th>Demanda (bobinas/min)</th>
-            <th>Distribuição por Viagem (bobinas)</th>
           </tr>
         </thead>
         <tbody></tbody>
       </table>
       <p id="status"></p>
+    </section>
+    <section class="distribution-section">
+      <h2>Distribuição por Viagem</h2>
+      <table id="distribution-table" class="distribution-table">
+        <thead>
+          <tr>
+            <th>Viagem</th>
+            <th>Impressoras</th>
+            <th>Laminadoras</th>
+            <th>Corte 1</th>
+            <th>Corte 2</th>
+            <th>F1</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
     </section>
   </main>
   <script>
@@ -167,6 +200,7 @@
       const cycleTimeInput = document.getElementById("cycleTime");
       const resultTable = document.querySelector("#result-table tbody");
       const statusText = document.getElementById("status");
+      const distributionTable = document.querySelector("#distribution-table tbody");
 
       // Render inputs for sectors
       sectors.forEach((sector, index) => {
@@ -207,6 +241,7 @@
 
         let totalDemand = 0;
         resultTable.innerHTML = "";
+        let sectorDemands = [];
 
         sectors.forEach((sector) => {
           let totalBobinasPerMin = 0;
@@ -215,31 +250,66 @@
             // Calculando demanda para F1 (Número de bobinas por hora dividido por 60)
             totalBobinasPerMin = sector.bobinasPerHour / 60;
           } else {
-            const timePerBobina = sector.consumption / sector.speed; // Tempo para consumir uma bobina
-            totalBobinasPerMin = 1 / timePerBobina; // Convertendo para bobinas por minuto
+            // Calculando demanda para outros setores (Comprimento / Velocidade)
+            totalBobinasPerMin = (sector.consumption / sector.speed) / 1000; // Bobinas por minuto
           }
 
+          sectorDemands.push(totalBobinasPerMin);
           totalDemand += totalBobinasPerMin;
 
-          const sectorDistribution = (totalBobinasPerMin / totalDemand) * rebocadorBobinasMin;
-          resultTable.innerHTML += `
-            <tr>
-              <td>${sector.name}</td>
-              <td>${totalBobinasPerMin.toFixed(4)}</td>
-              <td>${sectorDistribution.toFixed(2)}</td>
-            </tr>
-          `;
+          const row = `<tr>
+                        <td>${sector.name}</td>
+                        <td>Consumo: ${sector.consumption}m, Velocidade: ${sector.speed}m/min</td>
+                        <td>${totalBobinasPerMin.toFixed(4)} bobinas/min</td>
+                      </tr>`;
+          resultTable.innerHTML += row;
         });
 
+        // Verificando se o rebocador consegue atender a demanda
         if (totalDemand <= rebocadorBobinasMin) {
-          statusText.textContent = "Capacidade do rebocador atende à demanda!";
-          statusText.classList.add("success");
-          statusText.classList.remove("error");
+          statusText.textContent = "O rebocador pode atender todos os setores!";
+          statusText.className = "success";
         } else {
-          statusText.textContent = "A demanda excede a capacidade do rebocador!";
-          statusText.classList.add("error");
-          statusText.classList.remove("success");
+          statusText.textContent = "A demanda é maior do que a capacidade do rebocador!";
+          statusText.className = "error";
         }
+
+        // Distribuição por viagem
+        let trip = 1;
+        let tripData = [];
+        let remainingBobinas = [...sectorDemands];
+
+        while (remainingBobinas.some(bobinas => bobinas > 0)) {
+          let tripRow = [trip];
+          let totalBobinas = 0;
+
+          sectors.forEach((sector, index) => {
+            if (remainingBobinas[index] > 0) {
+              if (remainingBobinas[index] > 0) {
+                remainingBobinas[index] -= Math.min(remainingBobinas[index], rebocadorBobinasMin / sectors.length);
+                tripRow.push(1);
+                totalBobinas++;
+              } else {
+                tripRow.push(0);
+              }
+            }
+          });
+
+          tripData.push(tripRow);
+          trip++;
+        }
+
+        // Preenchendo tabela de distribuição
+        distributionTable.innerHTML = tripData.map(row => {
+          return `<tr>
+                    <td>${row[0]}</td>
+                    <td>${row[1]}</td>
+                    <td>${row[2]}</td>
+                    <td>${row[3]}</td>
+                    <td>${row[4]}</td>
+                    <td>${row[5]}</td>
+                  </tr>`;
+        }).join("");
       });
     });
   </script>
