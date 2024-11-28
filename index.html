@@ -143,8 +143,7 @@
         <thead>
           <tr>
             <th>Setor</th>
-            <th>Comprimento da Bobina (m)</th>
-            <th>Velocidade (m/min)</th>
+            <th>Dados de Consumo</th>
             <th>Demanda (bobinas/min)</th>
           </tr>
         </thead>
@@ -156,11 +155,11 @@
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       const sectors = [
-        { name: "Impressoras (1, 2, 3)", consumption: 3000, speed: 212, multiplier: 3 },
-        { name: "Laminadoras (1, 2, 3, 4)", consumption: 4000, speed: 150, multiplier: 4 },
-        { name: "Corte 1", consumption: 1500, speed: 100, multiplier: 1 },
-        { name: "Corte 2", consumption: 2000, speed: 120, multiplier: 1 },
-        { name: "F1", consumption: 2500, speed: 180, multiplier: 1 },
+        { name: "Impressoras (1, 2, 3)", consumption: 3000, speed: 212, multiplier: 3, isBobinasPerHour: false },
+        { name: "Laminadoras (1, 2, 3, 4)", consumption: 4000, speed: 150, multiplier: 4, isBobinasPerHour: false },
+        { name: "Corte 1", consumption: 1500, speed: 100, multiplier: 1, isBobinasPerHour: false },
+        { name: "Corte 2", consumption: 2000, speed: 120, multiplier: 1, isBobinasPerHour: false },
+        { name: "F1", bobinasPerHour: 60, multiplier: 1, isBobinasPerHour: true }
       ];
 
       const sectorConfigs = document.getElementById("sector-configs");
@@ -171,17 +170,28 @@
 
       // Render inputs for sectors
       sectors.forEach((sector, index) => {
-        sectorConfigs.innerHTML += `
-          <div>
-            <h4>${sector.name}</h4>
-            <label>Comprimento da Bobina (m):
-              <input type="number" value="${sector.consumption}" data-index="${index}" data-key="consumption">
-            </label>
-            <label>Velocidade (m/min):
-              <input type="number" value="${sector.speed}" data-index="${index}" data-key="speed">
-            </label>
-          </div>
-        `;
+        if (sector.isBobinasPerHour) {
+          sectorConfigs.innerHTML += `
+            <div>
+              <h4>${sector.name}</h4>
+              <label>Número de Bobinas por Hora:
+                <input type="number" value="${sector.bobinasPerHour}" data-index="${index}" data-key="bobinasPerHour">
+              </label>
+            </div>
+          `;
+        } else {
+          sectorConfigs.innerHTML += `
+            <div>
+              <h4>${sector.name}</h4>
+              <label>Comprimento da Bobina (m):
+                <input type="number" value="${sector.consumption}" data-index="${index}" data-key="consumption">
+              </label>
+              <label>Velocidade (m/min):
+                <input type="number" value="${sector.speed}" data-index="${index}" data-key="speed">
+              </label>
+            </div>
+          `;
+        }
       });
 
       sectorConfigs.addEventListener("input", (event) => {
@@ -199,17 +209,22 @@
         resultTable.innerHTML = "";
 
         sectors.forEach((sector) => {
-          const timePerBobina = sector.consumption / sector.speed; // Minutes to consume one bobina
-          const bobinasPerMin = 1 / timePerBobina; // Bobinas consumed per minute
-          const totalBobinasPerMin = bobinasPerMin * sector.multiplier; // Adjusted by multiplier
+          let totalBobinasPerMin = 0;
+
+          if (sector.isBobinasPerHour) {
+            // Calculando demanda para F1 (Número de bobinas por hora dividido por 60)
+            totalBobinasPerMin = sector.bobinasPerHour / 60;
+          } else {
+            const timePerBobina = sector.consumption / sector.speed; // Tempo para consumir uma bobina
+            totalBobinasPerMin = 1 / timePerBobina * sector.multiplier; // Demanda ajustada por multiplicador
+          }
 
           totalDemand += totalBobinasPerMin;
 
           resultTable.innerHTML += `
             <tr>
               <td>${sector.name}</td>
-              <td>${sector.consumption}</td>
-              <td>${sector.speed}</td>
+              <td>${sector.isBobinasPerHour ? sector.bobinasPerHour + " bobinas/h" : sector.consumption + " m, " + sector.speed + " m/min"}</td>
               <td>${totalBobinasPerMin.toFixed(4)}</td>
             </tr>
           `;
