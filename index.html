@@ -4,189 +4,230 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Fluxo Logístico do Rebocador</title>
-  <link rel="stylesheet" href="styles.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f4f4f9;
+      color: #333;
+    }
+
+    header {
+      background: #0078d7;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+    }
+
+    main {
+      padding: 1rem;
+      max-width: 900px;
+      margin: auto;
+    }
+
+    .container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .column {
+      flex: 1;
+      min-width: 300px;
+    }
+
+    h1, h2 {
+      margin-bottom: 1rem;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: bold;
+    }
+
+    input {
+      padding: 0.5rem;
+      margin-bottom: 1rem;
+      width: 100%;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    button {
+      padding: 0.7rem 1.5rem;
+      background: #0078d7;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+
+    button:hover {
+      background: #005bb5;
+    }
+
+    .result-section {
+      margin-top: 2rem;
+      text-align: center;
+    }
+
+    #result-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+
+    #result-table th, #result-table td {
+      border: 1px solid #ccc;
+      padding: 0.5rem;
+      text-align: center;
+    }
+
+    #result-table th {
+      background: #0078d7;
+      color: white;
+    }
+
+    #status {
+      font-weight: bold;
+      margin-top: 1rem;
+    }
+  </style>
 </head>
-    <style>
-        /* styles.css */
-body {
-  font-family: 'Arial', sans-serif;
-  margin: 0;
-  padding: 0;
-  background: #f4f4f9;
-  color: #333;
-}
-
-header {
-  background: #0078d7;
-  color: white;
-  padding: 1rem;
-  text-align: center;
-}
-
-main {
-  padding: 1rem;
-  max-width: 900px;
-  margin: auto;
-}
-
-h1, h2 {
-  margin-bottom: 1rem;
-}
-
-label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: bold;
-}
-
-input {
-  padding: 0.5rem;
-  margin-bottom: 1rem;
-  width: 100%;
-  max-width: 300px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-}
-
-button {
-  padding: 0.7rem 1.5rem;
-  background: #0078d7;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 1rem;
-}
-
-button:hover {
-  background: #005bb5;
-}
-
-.result-section {
-  margin-top: 2rem;
-  text-align: center;
-}
-
-#result-chart {
-  width: 100%;
-  max-width: 700px;
-  margin: auto;
-}
-
-#status {
-  font-weight: bold;
-  margin-top: 1rem;
-}
-
-    </style>
 <body>
   <header>
     <h1>Fluxo Logístico do Rebocador</h1>
   </header>
   <main>
-    <section class="config-section">
-      <h2>Configuração do Rebocador</h2>
-      <label>
-        Capacidade Máxima (bobinas):
-        <input type="number" id="capacity" value="6" min="1" max="10">
-      </label>
-      <label>
-        Tempo de Ciclo (min):
-        <input type="number" id="cycleTime" value="15" min="5" max="60">
-      </label>
-    </section>
-    <section class="sector-section">
-      <h2>Configuração dos Setores</h2>
-      <div id="sector-configs">
-        <!-- Configurações dinâmicas dos setores serão inseridas aqui -->
+    <div class="container">
+      <!-- Configurações do Rebocador -->
+      <div class="column">
+        <h2>Configuração do Rebocador</h2>
+        <label>
+          Capacidade Máxima (bobinas):
+          <input type="number" id="capacity" value="6" min="1" max="10">
+        </label>
+        <label>
+          Tempo de Ciclo (min):
+          <input type="number" id="cycleTime" value="15" min="5" max="60">
+        </label>
       </div>
-      <button id="add-sector">Adicionar Setor</button>
-    </section>
+
+      <!-- Configurações dos Setores -->
+      <div class="column">
+        <h2>Configuração dos Setores</h2>
+        <div id="sector-configs">
+          <!-- Configurações dinâmicas dos setores -->
+        </div>
+        <button id="add-sector">Adicionar Setor</button>
+      </div>
+    </div>
+
+    <!-- Resultado -->
     <section class="result-section">
       <h2>Resultado</h2>
-      <div id="result-chart">
-        <!-- Gráfico será inserido aqui -->
-      </div>
+      <table id="result-table">
+        <thead>
+          <tr>
+            <th>Setor</th>
+            <th>Consumo (m)</th>
+            <th>Velocidade (m/min)</th>
+            <th>Bobinas/min</th>
+            <th>Atende?</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Resultados dinâmicos -->
+        </tbody>
+      </table>
       <p id="status"></p>
     </section>
   </main>
-  <script src="script.js"></script>
-    <script>
-        // script.js
-document.addEventListener("DOMContentLoaded", () => {
-  const sectors = [
-    { name: "Impressão", consumption: 0, speed: 0 },
-    { name: "Laminação", consumption: 0, speed: 0 },
-    { name: "Corte 1", consumption: 0, speed: 0 },
-    { name: "Corte 2", consumption: 0, speed: 0 },
-    { name: "F1", consumption: 0, speed: 0 },
-  ];
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const sectors = [
+        { name: "Impressora 1", consumption: 0, speed: 0 },
+        { name: "Impressora 2", consumption: 0, speed: 0 },
+        { name: "Impressora 3", consumption: 0, speed: 0 },
+        { name: "Laminadora 1", consumption: 0, speed: 0 },
+        { name: "Laminadora 2", consumption: 0, speed: 0 },
+        { name: "Laminadora 3", consumption: 0, speed: 0 },
+        { name: "Laminadora 4", consumption: 0, speed: 0 },
+      ];
 
-  const capacityInput = document.getElementById("capacity");
-  const cycleTimeInput = document.getElementById("cycleTime");
-  const sectorConfigs = document.getElementById("sector-configs");
-  const addSectorButton = document.getElementById("add-sector");
-  const resultChart = document.getElementById("result-chart");
-  const statusText = document.getElementById("status");
+      const capacityInput = document.getElementById("capacity");
+      const cycleTimeInput = document.getElementById("cycleTime");
+      const sectorConfigs = document.getElementById("sector-configs");
+      const resultTable = document.querySelector("#result-table tbody");
+      const statusText = document.getElementById("status");
 
-  function updateSectorUI() {
-    sectorConfigs.innerHTML = sectors
-      .map(
-        (sector, index) => `
-        <div class="sector-config">
-          <h3>${sector.name}</h3>
-          <label>
-            Consumo (m):
-            <input type="number" data-index="${index}" data-key="consumption" value="${sector.consumption}">
-          </label>
-          <label>
-            Velocidade (m/min):
-            <input type="number" data-index="${index}" data-key="speed" value="${sector.speed}">
-          </label>
-        </div>`
-      )
-      .join("");
-  }
-
-  function calculateResults() {
-    const capacity = parseInt(capacityInput.value);
-    const cycleTime = parseInt(cycleTimeInput.value);
-
-    let totalTime = 0;
-
-    sectors.forEach((sector) => {
-      if (sector.consumption > 0 && sector.speed > 0) {
-        totalTime += sector.consumption / sector.speed;
+      function updateSectorUI() {
+        sectorConfigs.innerHTML = sectors
+          .map(
+            (sector, index) => `
+          <div>
+            <h4>${sector.name}</h4>
+            <label>
+              Consumo (m):
+              <input type="number" data-index="${index}" data-key="consumption" value="${sector.consumption}">
+            </label>
+            <label>
+              Velocidade (m/min):
+              <input type="number" data-index="${index}" data-key="speed" value="${sector.speed}">
+            </label>
+          </div>`
+          )
+          .join("");
       }
+
+      function calculateResults() {
+        const capacity = parseInt(capacityInput.value);
+        const cycleTime = parseInt(cycleTimeInput.value);
+
+        let totalBobinasMin = 0;
+        resultTable.innerHTML = "";
+
+        sectors.forEach((sector) => {
+          const bobinasMin =
+            sector.consumption > 0 && sector.speed > 0
+              ? sector.consumption / sector.speed
+              : 0;
+          totalBobinasMin += bobinasMin;
+
+          resultTable.innerHTML += `
+            <tr>
+              <td>${sector.name}</td>
+              <td>${sector.consumption}</td>
+              <td>${sector.speed}</td>
+              <td>${bobinasMin.toFixed(2)}</td>
+              <td>${bobinasMin <= capacity / cycleTime ? "Sim" : "Não"}</td>
+            </tr>
+          `;
+        });
+
+        statusText.textContent =
+          totalBobinasMin <= capacity / cycleTime
+            ? "O rebocador atende os setores."
+            : "O rebocador não atende os setores.";
+        statusText.style.color =
+          totalBobinasMin <= capacity / cycleTime ? "green" : "red";
+      }
+
+      sectorConfigs.addEventListener("input", (event) => {
+        const { index, key } = event.target.dataset;
+        sectors[index][key] = parseFloat(event.target.value);
+        calculateResults();
+      });
+
+      capacityInput.addEventListener("input", calculateResults);
+      cycleTimeInput.addEventListener("input", calculateResults);
+
+      updateSectorUI();
+      calculateResults();
     });
-
-    const cyclesNeeded = Math.ceil(totalTime / cycleTime);
-    const exceedsCapacity = cyclesNeeded > capacity;
-
-    resultChart.innerHTML = `Ciclos necessários: ${cyclesNeeded}`;
-    statusText.textContent = exceedsCapacity
-      ? "O rebocador não atende os setores."
-      : "O rebocador atende os setores.";
-    statusText.style.color = exceedsCapacity ? "red" : "green";
-  }
-
-  sectorConfigs.addEventListener("input", (event) => {
-    const { index, key } = event.target.dataset;
-    sectors[index][key] = parseFloat(event.target.value);
-    calculateResults();
-  });
-
-  capacityInput.addEventListener("input", calculateResults);
-  cycleTimeInput.addEventListener("input", calculateResults);
-  addSectorButton.addEventListener("click", () => {
-    sectors.push({ name: `Setor ${sectors.length + 1}`, consumption: 0, speed: 0 });
-    updateSectorUI();
-  });
-
-  updateSectorUI();
-  calculateResults();
-});
-
-    </script>
+  </script>
 </body>
 </html>
