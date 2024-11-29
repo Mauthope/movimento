@@ -154,34 +154,42 @@
                 let viagem = { imp: 0, lam: 0, cut1: 0, cut2: 0, f1: 0 };
                 let remainingCapacity = rebocadorCapacity;
 
-                // Lógica de distribuição com prioridades e reservas
-                ["imp", "lam", "cut1", "cut2", "f1"].forEach((setor) => {
-                    const consumoSetor = {
-                        imp: impConsumption,
-                        lam: lamConsumption,
-                        cut1: cut1Consumption,
-                        cut2: cut2Consumption,
-                        f1: f1Consumption,
-                    }[setor];
+                // Se o setor F1 precisa de bobinas, o rebocador aloca toda a capacidade para F1
+                if (reservas.f1 < f1Bobinas) {
+                    const neededForF1 = f1Bobinas - reservas.f1;
+                    const bobinasForF1 = Math.min(remainingCapacity, neededForF1);
+                    viagem.f1 = bobinasForF1;
+                    reservas.f1 += bobinasForF1;
+                    remainingCapacity -= bobinasForF1;
+                }
 
-                    const needed = Math.max(0, consumoSetor * cycleTime - reservas[setor]);
-                    const bobinas = Math.min(remainingCapacity, Math.ceil(needed));
-                    viagem[setor] = bobinas;
-                    reservas[setor] += bobinas - consumoSetor * cycleTime;
-                    remainingCapacity -= bobinas;
-                });
+                // Caso o rebocador ainda tenha capacidade, atende os outros setores
+                if (remainingCapacity > 0) {
+                    ["imp", "lam", "cut1", "cut2"].forEach((setor) => {
+                        const consumoSetor = {
+                            imp: impConsumption,
+                            lam: lamConsumption,
+                            cut1: cut1Consumption,
+                            cut2: cut2Consumption,
+                        }[setor];
 
-                viagens.push({ ...viagem, reservas: { ...reservas } });
+                        const needed = Math.max(0, consumoSetor * cycleTime - reservas[setor]);
+                        const bobinas = Math.min(remainingCapacity, Math.ceil(needed));
+                        viagem[setor] = bobinas;
+                        reservas[setor] += bobinas - consumoSetor * cycleTime;
+                        remainingCapacity -= bobinas;
+                    });
+                }
+
+                viagens.push(viagem);
             }
 
-            // Renderização dos resultados
+            // Exibição dos resultados
             resultsDiv.innerHTML = `
-                <p><strong>O rebocador atende à demanda.</strong></p>
-                <p>Demanda total: ${totalDemand.toFixed(2)} bobinas/min</p>
-                <p>Capacidade do rebocador: ${rebocadorCapacityPerMinute.toFixed(2)} bobinas/min</p>
+                <h3>Distribuição das Bobinas por Viagem (18 horas)</h3>
                 <table>
                     <tr>
-                        <th>Setor</th>
+                        <th>Viagem</th>
                         <th>Impressão</th>
                         <th>Laminação</th>
                         <th>Corte 1</th>
