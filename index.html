@@ -211,8 +211,6 @@
             if (atendimentoBtn.textContent === "Atender") {
                 // Iniciar cronômetro
                 atendimentoBtn.textContent = "Finalizar";
-                atendimentoCell.style.backgroundColor = '#f3f3f3'; // Cor de andamento
-                atendimentoBtn.disabled = true;
                 cronometroStartTime = Date.now();
                 cronometroInterval = setInterval(() => updateCronometro(atendimentoBtn), 1000);
             } else {
