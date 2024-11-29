@@ -53,10 +53,6 @@
         button:hover {
             background: #45a049;
         }
-        .btn-group {
-            display: flex;
-            justify-content: space-around;
-        }
         .red {
             background-color: red !important;
         }
@@ -76,24 +72,6 @@
             <input type="number" id="cycle-time" value="15"><br><br>
             <label for="rebocador-capacity">Capacidade (bobinas):</label>
             <input type="number" id="rebocador-capacity" value="6"><br><br>
-
-            <h3>Setor Impressão</h3>
-            <label for="imp1">Impressora 1 (nº de bobinas por hora):</label>
-            <input type="number" id="imp1" value="1"><br><br>
-            <label for="imp2">Impressora 2 (nº de bobinas por hora):</label>
-            <input type="number" id="imp2" value="1"><br><br>
-            <label for="imp3">Impressora 3 (nº de bobinas por hora):</label>
-            <input type="number" id="imp3" value="1"><br><br>
-
-            <h3>Setor Laminação</h3>
-            <label for="lam1">Laminadora 1 (nº de bobinas por hora):</label>
-            <input type="number" id="lam1" value="1"><br><br>
-            <label for="lam2">Laminadora 2 (nº de bobinas por hora):</label>
-            <input type="number" id="lam2" value="1"><br><br>
-            <label for="lam3">Laminadora 3 (nº de bobinas por hora):</label>
-            <input type="number" id="lam3" value="1"><br><br>
-            <label for="lam4">Laminadora 4 (nº de bobinas por hora):</label>
-            <input type="number" id="lam4" value="1"><br><br>
 
             <button onclick="simulate()">Simular</button>
         </div>
@@ -116,23 +94,15 @@
             const cycleTime = parseFloat(document.getElementById('cycle-time').value);
             const rebocadorCapacity = parseFloat(document.getElementById('rebocador-capacity').value);
 
-            // Setores: Impressão e Laminação
-            const imp1 = parseFloat(document.getElementById('imp1').value);
-            const imp2 = parseFloat(document.getElementById('imp2').value);
-            const imp3 = parseFloat(document.getElementById('imp3').value);
-            const lam1 = parseFloat(document.getElementById('lam1').value);
-            const lam2 = parseFloat(document.getElementById('lam2').value);
-            const lam3 = parseFloat(document.getElementById('lam3').value);
-            const lam4 = parseFloat(document.getElementById('lam4').value);
-
-            // Lógica de planejamento para impressão e laminação
+            // Lógica de planejamento
             let viagens = [];
-            let totalImp = imp1 + imp2 + imp3;
-            let totalLam = lam1 + lam2 + lam3 + lam4;
-            let totalCut1 = 0, totalCut2 = 0;
-
             for (let i = 0; i < 10; i++) { // Exemplo de 10 viagens
-                let viagem = { imp: Math.random() * totalImp, lam: Math.random() * totalLam, cut1: Math.random() * 10, cut2: Math.random() * 10, atendimento: 0 };
+                let viagem = {
+                    imp1: Math.random() * 10, imp2: Math.random() * 10, imp3: Math.random() * 10,
+                    lam1: Math.random() * 10, lam2: Math.random() * 10, lam3: Math.random() * 10, lam4: Math.random() * 10,
+                    cut1: Math.random() * 10, cut2: Math.random() * 10,
+                    atendimento: 0
+                };
                 viagens.push(viagem);
             }
 
@@ -156,13 +126,13 @@
                     ${viagens.map((viagem, index) => `
                         <tr>
                             <td>${index + 1}</td>
-                            <td>${viagem.imp.toFixed(2)}</td>
-                            <td>${viagem.imp.toFixed(2)}</td>
-                            <td>${viagem.imp.toFixed(2)}</td>
-                            <td>${viagem.lam.toFixed(2)}</td>
-                            <td>${viagem.lam.toFixed(2)}</td>
-                            <td>${viagem.lam.toFixed(2)}</td>
-                            <td>${viagem.lam.toFixed(2)}</td>
+                            <td>${viagem.imp1.toFixed(2)}</td>
+                            <td>${viagem.imp2.toFixed(2)}</td>
+                            <td>${viagem.imp3.toFixed(2)}</td>
+                            <td>${viagem.lam1.toFixed(2)}</td>
+                            <td>${viagem.lam2.toFixed(2)}</td>
+                            <td>${viagem.lam3.toFixed(2)}</td>
+                            <td>${viagem.lam4.toFixed(2)}</td>
                             <td>${viagem.cut1.toFixed(2)}</td>
                             <td>${viagem.cut2.toFixed(2)}</td>
                             <td><button class="attend-btn" onclick="toggleCronometro(${index}, ${cycleTime}, this)">Atender</button></td>
@@ -180,9 +150,7 @@
             if (activeCronometer === index) {
                 clearInterval(cronometroInterval);
                 const totalTime = parseInt(cronometroValue.textContent); // Obtém o tempo registrado
-                // Registra o tempo final
                 cronometroValue.textContent = totalTime; 
-                // Verifica a cor do botão
                 if (totalTime > cycleTime) {
                     button.classList.add('red');
                     button.classList.remove('green');
@@ -193,26 +161,23 @@
                 activeCronometer = null;
                 button.textContent = 'Atender';
             } else {
-                // Se outro cronômetro estiver ativo, finaliza e registra o tempo
                 if (activeCronometer !== null) {
                     const prevButton = document.querySelectorAll('table tr')[activeCronometer + 1].querySelector('button');
                     clearInterval(cronometroInterval);
-                    prevButton.classList.add('red');
-                    prevButton.classList.remove('green');
                     prevButton.textContent = 'Atender';
+                    prevButton.classList.remove('red');
+                    prevButton.classList.remove('green');
                 }
 
-                // Inicia o cronômetro
                 activeCronometer = index;
-                let seconds = 0;
-                cronometroInterval = setInterval(function () {
-                    cronometroValue.textContent = seconds;
-                    seconds += 1;
-                }, 1000);
+                let startTime = Date.now(); 
 
-                button.classList.add('green');
-                button.classList.remove('red');
-                button.textContent = 'Parar';
+                button.textContent = 'Finalizar Atendimento';
+
+                cronometroInterval = setInterval(() => {
+                    let elapsedTime = Math.floor((Date.now() - startTime) / 1000); 
+                    atendimentoCell.textContent = elapsedTime;
+                }, 1000);
             }
         }
     </script>
