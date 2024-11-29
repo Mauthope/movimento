@@ -1,313 +1,164 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Fluxo Logístico do Rebocador</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      background-color: #f4f4f9;
-      color: #333;
-    }
-
-    header {
-      background-color: #004aad;
-      color: white;
-      padding: 1.5rem;
-      text-align: center;
-      font-size: 1.5rem;
-    }
-
-    main {
-      max-width: 1200px;
-      margin: 2rem auto;
-      padding: 1rem;
-      background-color: white;
-      box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-      border-radius: 10px;
-    }
-
-    .container {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 2rem;
-    }
-
-    .column {
-      flex: 1;
-      min-width: 300px;
-    }
-
-    h2 {
-      margin-bottom: 1rem;
-      color: #004aad;
-    }
-
-    label {
-      display: block;
-      margin-bottom: 0.5rem;
-      font-weight: bold;
-    }
-
-    input {
-      padding: 0.5rem;
-      margin-bottom: 1rem;
-      width: 100%;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-    }
-
-    button {
-      padding: 0.7rem 1.5rem;
-      background-color: #004aad;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      transition: background-color 0.3s;
-    }
-
-    button:hover {
-      background-color: #003380;
-    }
-
-    .result-section {
-      margin-top: 2rem;
-      text-align: center;
-    }
-
-    #result-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 1rem;
-    }
-
-    #result-table th, #result-table td {
-      border: 1px solid #ddd;
-      padding: 0.8rem;
-      text-align: center;
-    }
-
-    #result-table th {
-      background-color: #004aad;
-      color: white;
-    }
-
-    #distribution-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 2rem;
-    }
-
-    #distribution-table th, #distribution-table td {
-      border: 1px solid #ddd;
-      padding: 0.8rem;
-      text-align: center;
-    }
-
-    #distribution-table th {
-      background-color: #004aad;
-      color: white;
-    }
-
-    #status {
-      font-weight: bold;
-      margin-top: 1rem;
-      padding: 1rem;
-      border-radius: 5px;
-    }
-
-    #status.success {
-      background-color: #d4edda;
-      color: #155724;
-    }
-
-    #status.error {
-      background-color: #f8d7da;
-      color: #721c24;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logística do Rebocador</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f4f4f9;
+            color: #333;
+        }
+        h1 {
+            text-align: center;
+            color: #4CAF50;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .section {
+            background: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            flex: 1;
+            min-width: 300px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            text-align: center;
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+        th {
+            background: #4CAF50;
+            color: white;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+    </style>
 </head>
 <body>
-  <header>
-    Fluxo Logístico do Rebocador
-  </header>
-  <main>
+    <h1>Simulação de Logística do Rebocador</h1>
     <div class="container">
-      <div class="column">
-        <h2>Configuração do Rebocador</h2>
-        <label>
-          Capacidade Máxima (bobinas):
-          <input type="number" id="capacity" value="6" min="1">
-        </label>
-        <label>
-          Tempo de Ciclo (min):
-          <input type="number" id="cycleTime" value="15" min="1">
-        </label>
-      </div>
-      <div class="column">
-        <h2>Configuração dos Setores</h2>
-        <div id="sector-configs"></div>
-      </div>
+        <!-- Entrada de Dados -->
+        <div class="section">
+            <h2>Configuração dos Setores</h2>
+            <div>
+                <label for="imp-length">Comprimento de bobina (m) - Impressão:</label>
+                <input type="number" id="imp-length" value="3000"><br><br>
+                <label for="imp-speed">Velocidade de consumo (m/min) - Impressão:</label>
+                <input type="number" id="imp-speed" value="212"><br><br>
+
+                <label for="lam-length">Comprimento de bobina (m) - Laminação:</label>
+                <input type="number" id="lam-length" value="2500"><br><br>
+                <label for="lam-speed">Velocidade de consumo (m/min) - Laminação:</label>
+                <input type="number" id="lam-speed" value="180"><br><br>
+
+                <label for="f1-consumption">Bobinas por hora - F1:</label>
+                <input type="number" id="f1-consumption" value="4"><br><br>
+
+                <label for="cycle-time">Tempo de ciclo do rebocador (min):</label>
+                <input type="number" id="cycle-time" value="15"><br><br>
+                
+                <label for="rebocador-capacity">Capacidade do rebocador (bobinas):</label>
+                <input type="number" id="rebocador-capacity" value="6"><br><br>
+
+                <button onclick="calculate()">Simular</button>
+            </div>
+        </div>
+
+        <!-- Resultado -->
+        <div class="section">
+            <h2>Resultados</h2>
+            <div id="results">
+                <p>Preencha os campos e clique em "Simular".</p>
+            </div>
+        </div>
     </div>
-    <button id="calculate">Calcular</button>
-    <section class="result-section">
-      <h2>Resultados</h2>
-      <table id="result-table">
-        <thead>
-          <tr>
-            <th>Setor</th>
-            <th>Dados de Consumo</th>
-            <th>Demanda (bobinas/min)</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-      <table id="distribution-table">
-        <thead>
-          <tr>
-            <th>Viagem</th>
-            <th>Impressoras (1, 2, 3)</th>
-            <th>Laminadoras (1, 2, 3, 4)</th>
-            <th>Corte 1</th>
-            <th>Corte 2</th>
-            <th>F1</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-      <p id="status"></p>
-    </section>
-  </main>
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      const sectors = [
-        { name: "Impressoras (1, 2, 3)", consumption: 3000, speed: 212, multiplier: 3, isBobinasPerHour: false },
-        { name: "Laminadoras (1, 2, 3, 4)", consumption: 4000, speed: 150, multiplier: 4, isBobinasPerHour: false },
-        { name: "Corte 1", consumption: 1500, speed: 100, multiplier: 1, isBobinasPerHour: false },
-        { name: "Corte 2", consumption: 2000, speed: 120, multiplier: 1, isBobinasPerHour: false },
-        { name: "F1", bobinasPerHour: 60, multiplier: 1, isBobinasPerHour: true }
-      ];
 
-      const sectorConfigs = document.getElementById("sector-configs");
-      const capacityInput = document.getElementById("capacity");
-      const cycleTimeInput = document.getElementById("cycleTime");
-      const resultTable = document.querySelector("#result-table tbody");
-      const distributionTable = document.querySelector("#distribution-table tbody");
-      const statusText = document.getElementById("status");
+    <script>
+        function calculate() {
+            const impLength = parseFloat(document.getElementById('imp-length').value);
+            const impSpeed = parseFloat(document.getElementById('imp-speed').value);
+            const lamLength = parseFloat(document.getElementById('lam-length').value);
+            const lamSpeed = parseFloat(document.getElementById('lam-speed').value);
+            const f1Consumption = parseFloat(document.getElementById('f1-consumption').value);
+            const cycleTime = parseFloat(document.getElementById('cycle-time').value);
+            const rebocadorCapacity = parseFloat(document.getElementById('rebocador-capacity').value);
 
-      // Render inputs for sectors
-      sectors.forEach((sector, index) => {
-        if (sector.isBobinasPerHour) {
-          sectorConfigs.innerHTML += `
-            <div>
-              <h4>${sector.name}</h4>
-              <label>Número de Bobinas por Hora:
-                <input type="number" value="${sector.bobinasPerHour}" data-index="${index}" data-key="bobinasPerHour">
-              </label>
-            </div>
-          `;
-        } else {
-          sectorConfigs.innerHTML += `
-            <div>
-              <h4>${sector.name}</h4>
-              <label>Comprimento da Bobina (m):
-                <input type="number" value="${sector.consumption}" data-index="${index}" data-key="consumption">
-              </label>
-              <label>Velocidade (m/min):
-                <input type="number" value="${sector.speed}" data-index="${index}" data-key="speed">
-              </label>
-            </div>
-          `;
-        }
-      });
+            // Cálculo da demanda por bobina por minuto
+            const impDemand = 1 / (impLength / impSpeed);
+            const lamDemand = 1 / (lamLength / lamSpeed);
+            const f1Demand = f1Consumption / 60;
 
-      sectorConfigs.addEventListener("input", (event) => {
-        const index = event.target.dataset.index;
-        const key = event.target.dataset.key;
-        sectors[index][key] = parseFloat(event.target.value) || 0;
-      });
+            // Cálculo do Takt Time
+            const taktImp = 1 / impDemand;
+            const taktLam = 1 / lamDemand;
+            const taktF1 = 1 / f1Demand;
 
-      document.getElementById("calculate").addEventListener("click", () => {
-    // Limpeza anterior
-    resultTable.innerHTML = "";
-    distributionTable.innerHTML = "";
-    statusText.textContent = "";
+            // Distribuição por viagem
+            let viagens = [];
+            let totalDemand = impDemand + lamDemand + f1Demand;
 
-    const rebocadorCapacity = parseFloat(capacityInput.value) || 0;
-    const cycleTime = parseFloat(cycleTimeInput.value) || 0;
-
-    if (rebocadorCapacity <= 0 || cycleTime <= 0) {
-        statusText.textContent = "Por favor, insira valores válidos para capacidade e tempo de ciclo.";
-        statusText.className = "error";
-        return;
-    }
-
-    const rebocadorCapacityPerMinute = rebocadorCapacity / cycleTime;
-    let totalDemandPerMinute = 0;
-
-    sectors.forEach(sector => {
-        const bobinasPerMinute = sector.isBobinasPerHour 
-            ? sector.bobinasPerHour / 60 
-            : (sector.consumption / sector.speed) / 60 * sector.multiplier;
-        totalDemandPerMinute += bobinasPerMinute;
-
-        // Popula tabela de resultados
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-            <td>${sector.name}</td>
-            <td>${sector.isBobinasPerHour ? `Bobinas por Hora: ${sector.bobinasPerHour}` : `${sector.consumption}m, ${sector.speed}m/min`}</td>
-            <td>${bobinasPerMinute.toFixed(4)}</td>`;
-        resultTable.appendChild(tr);
-    });
-
-    // Verifica capacidade
-    if (totalDemandPerMinute <= rebocadorCapacityPerMinute) {
-        statusText.textContent = "O rebocador tem capacidade suficiente!";
-        statusText.className = "success";
-    } else {
-        statusText.textContent = "A capacidade do rebocador não é suficiente.";
-        statusText.className = "error";
-    }
-
-    // Calcular distribuição
-    let trips = [];
-    let remainingDemand = [...sectors];
-    while (remainingDemand.some(sector => sector.consumption > 0 || sector.isBobinasPerHour)) {
-        let trip = [];
-        let totalBobinas = 0;
-
-        remainingDemand.forEach(sector => {
-            let bobinasForTrip = sector.isBobinasPerHour 
-                ? sector.bobinasPerHour / 60 
-                : (sector.consumption / sector.speed) / 60 * sector.multiplier;
-
-            if (totalBobinas + bobinasForTrip <= rebocadorCapacityPerMinute) {
-                totalBobinas += bobinasForTrip;
-                trip.push(bobinasForTrip.toFixed(2));
-                if (!sector.isBobinasPerHour) {
-                    sector.consumption -= bobinasForTrip * sector.speed * 60 / sector.multiplier;
-                } else {
-                    sector.bobinasPerHour = 0;
-                }
+            if (totalDemand > rebocadorCapacity / cycleTime) {
+                viagens.push("Capacidade do rebocador insuficiente para atender a demanda total.");
             } else {
-                trip.push(0);
+                let remainingCapacity = rebocadorCapacity;
+                while (totalDemand > 0) {
+                    let viagem = { imp: 0, lam: 0, f1: 0 };
+                    if (remainingCapacity >= 1) {
+                        if (impDemand > 0) viagem.imp++;
+                        if (lamDemand > 0) viagem.lam++;
+                        if (f1Demand > 0) viagem.f1++;
+                        remainingCapacity--;
+                        totalDemand--;
+                    }
+                    viagens.push(viagem);
+                }
             }
-        });
 
-        trips.push(trip);
-    }
-
-    trips.forEach((trip, index) => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `<td>${index + 1}</td>` + trip.map(val => `<td>${val}</td>`).join("");
-        distributionTable.appendChild(tr);
-    });
-});
-
-  </script>
+            // Exibir resultados
+            const resultsDiv = document.getElementById("results");
+            resultsDiv.innerHTML = `
+                <p><strong>Takt Time Impressão:</strong> ${taktImp.toFixed(2)} min</p>
+                <p><strong>Takt Time Laminação:</strong> ${taktLam.toFixed(2)} min</p>
+                <p><strong>Takt Time F1:</strong> ${taktF1.toFixed(2)} min</p>
+                <table>
+                    <tr>
+                        <th>Viagem</th>
+                        <th>Impressão</th>
+                        <th>Laminação</th>
+                        <th>F1</th>
+                    </tr>
+                    ${viagens.map((v, i) => `
+                        <tr>
+                            <td>${i + 1}</td>
+                            <td>${v.imp || '-'}</td>
+                            <td>${v.lam || '-'}</td>
+                            <td>${v.f1 || '-'}</td>
+                        </tr>
+                    `).join('')}
+                </table>
+            `;
+        }
+    </script>
 </body>
 </html>
