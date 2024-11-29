@@ -202,49 +202,42 @@
             `;
         }
 
-let activeCronometer = null;  // Para controlar qual cronômetro está ativo
-let cronometroInterval = null; // Para controlar o intervalo do cronômetro
-let cronometroStartTime = null; // Para armazenar o momento de início do cronômetro
-
-// Função para alternar o cronômetro e aplicar a coloração
+     // Função para alternar o cronômetro de atendimento
 function toggleCronometro(index) {
-    const rows = document.querySelectorAll('table tr'); // Pega todas as linhas da tabela
-    const row = rows[index + 1]; // Linha da viagem (index + 1 para ignorar o cabeçalho da tabela)
-    const atendimentoCell = row.querySelectorAll('td')[2]; // A coluna "Atendimento" (supondo que a coluna "Atendimento" seja a 3ª, ou seja, índice 2)
-    const atendimentoBtn = row.querySelector('button'); // Botão "Atender"
+    const viagem = document.querySelectorAll('table tr')[index + 1];
+    const atendimentoBtn = viagem.querySelector('button'); // Botão de "Atender"
+    const atendimentoCell = viagem.querySelectorAll('td')[machineCounter]; // Coluna de Atendimento (última coluna)
 
     if (activeCronometer === index) {
-        // Se o cronômetro já está ativo e é clicado novamente, para o cronômetro
-        clearInterval(cronometroInterval);
-        atendimentoBtn.textContent = 'Atender'; // Muda o texto do botão de volta
-        const endTime = Date.now() - cronometroStartTime;
-        const elapsedMinutes = endTime / 60000; // Converte o tempo para minutos
+        clearInterval(cronometroInterval); // Parar o cronômetro
+        atendimentoBtn.textContent = 'Atender'; // Resetando o texto do botão
 
-        // Atualiza a célula de "Atendimento" com o tempo decorrido
+        // Calculando o tempo gasto (em minutos)
+        const endTime = Date.now() - cronometroStartTime;
+        const elapsedMinutes = endTime / 60000;
+
+        // Atualizando o texto da célula de atendimento com o tempo gasto
         atendimentoCell.textContent = `${elapsedMinutes.toFixed(2)} min`;
 
-        // Aplica a cor de fundo da célula "Atendimento" (vermelho se ultrapassar o tempo de ciclo)
+        // Aplicando a cor: vermelho se o tempo de atendimento for maior que o tempo de ciclo
         atendimentoCell.style.backgroundColor = (elapsedMinutes > parseFloat(document.getElementById('cycle-time').value)) ? 'red' : 'green';
-
-        // Desativa o cronômetro
-        activeCronometer = null;
+        
+        activeCronometer = null; // Resetando a variável de controle do cronômetro
     } else {
-        // Se o cronômetro não está ativo, ativa para essa viagem
         if (activeCronometer !== null) {
-            // Se já havia outro cronômetro ativo, para ele
-            const prevRow = rows[activeCronometer + 1];
-            prevRow.querySelector('button').textContent = 'Atender'; // Restaura o texto do botão
+            // Se um cronômetro estiver ativo em outra linha, resetando
+            const prevViagem = document.querySelectorAll('table tr')[activeCronometer + 1];
+            prevViagem.querySelector('button').textContent = 'Atender'; // Resetando o texto do botão
         }
 
-        // Ativa o cronômetro para a nova viagem
-        activeCronometer = index;
-        cronometroStartTime = Date.now(); // Marca o tempo de início do cronômetro
-        atendimentoBtn.textContent = 'Parar'; // Muda o texto do botão para "Parar"
+        activeCronometer = index; // Ativando o cronômetro para a viagem selecionada
+        cronometroStartTime = Date.now(); // Marcando o tempo de início
 
-        // Atualiza o cronômetro a cada segundo
+        atendimentoBtn.textContent = 'Parar'; // Mudando o texto do botão para "Parar"
+
         cronometroInterval = setInterval(() => {
-            const elapsedTime = Date.now() - cronometroStartTime; // Tempo decorrido em milissegundos
-            atendimentoCell.textContent = `${(elapsedTime / 60000).toFixed(2)} min`; // Exibe o tempo decorrido na célula "Atendimento"
+            const elapsedTime = Date.now() - cronometroStartTime;
+            atendimentoCell.textContent = `${(elapsedTime / 60000).toFixed(2)} min`; // Atualizando o tempo a cada segundo
         }, 1000);
     }
 }
