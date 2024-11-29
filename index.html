@@ -166,26 +166,29 @@ function simulate() {
         // Lógica de distribuição com prioridades e reservas
         for (let i = 0; i < machineCounter; i++) {
             const consumoSetor = setorConsumptions[i];
+            // Garantir que a quantidade necessária para cada máquina não ultrapasse a capacidade restante
             const needed = Math.max(0, consumoSetor * cycleTime - reservas[i]);
             const bobinas = Math.min(remainingCapacity, Math.ceil(needed));
 
-            // Ajuste para garantir que a carga será sempre maximizada
+            // Reserva e acumula os totais
             viagem[i] = bobinas;
             reservas[i] += bobinas - consumoSetor * cycleTime;
             remainingCapacity -= bobinas;
 
-            // Acumula os totais
+            // Acumula os totais por máquina
             totalPerMachine[i] += bobinas;
+        }
 
-            // Se a carga restante for maior que 0, tenta completar com outras máquinas
-            if (remainingCapacity > 0) {
-                for (let j = 0; j < machineCounter; j++) {
-                    if (j !== i) {
-                        const additionalBobinas = Math.min(remainingCapacity, Math.ceil(setorConsumptions[j] * cycleTime));
-                        viagem[j] += additionalBobinas;
-                        remainingCapacity -= additionalBobinas;
-                        totalPerMachine[j] += additionalBobinas;
-                    }
+        // Garantir que o rebocador sempre vá carregado até a capacidade máxima
+        if (remainingCapacity > 0) {
+            // Se houver capacidade remanescente no rebocador, aloque o restante para as máquinas que mais consomem
+            for (let i = 0; i < machineCounter; i++) {
+                if (remainingCapacity > 0) {
+                    const consumptionRate = setorConsumptions[i] * cycleTime;
+                    const allocate = Math.min(consumptionRate, remainingCapacity);
+                    viagem[i] += allocate;
+                    remainingCapacity -= allocate;
+                    totalPerMachine[i] += allocate;
                 }
             }
         }
@@ -224,6 +227,7 @@ function simulate() {
             </tfoot>
         </table>
     `;
+
     // Aplicar a coloração azul para células com valores diferentes de 0
     const rows = document.querySelectorAll('table tbody tr');
     rows.forEach(row => {
