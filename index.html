@@ -122,93 +122,94 @@
         }
     }
 
-    // Função para simular o planejamento
-    function simulate() {
-        const rebocadorCapacity = parseFloat(document.getElementById('rebocador-capacity').value);
-        const cycleTime = parseFloat(document.getElementById('cycle-time').value);
+  function simulate() {
+    const rebocadorCapacity = parseFloat(document.getElementById('rebocador-capacity').value);
+    const cycleTime = parseFloat(document.getElementById('cycle-time').value);
 
-        let totalDemand = 0;
-        let setorConsumptions = [];
+    let totalDemand = 0;
+    let setorConsumptions = [];
 
-        // Loop para calcular o consumo de cada máquina
-        for (let i = 1; i <= machineCounter; i++) {
-            const length = parseFloat(document.getElementById(`length-${i}`).value);
-            const speed = parseFloat(document.getElementById(`speed-${i}`).value);
-            const consumption = 1 / (length / speed);
-            setorConsumptions.push(consumption);
-            totalDemand += consumption;
-        }
+    // Loop para calcular o consumo de cada máquina
+    for (let i = 1; i <= machineCounter; i++) {
+        const length = parseFloat(document.getElementById(`length-${i}`).value);
+        const speed = parseFloat(document.getElementById(`speed-${i}`).value);
+        const consumption = 1 / (length / speed); // Consumo por ciclo (bobinas/min)
+        setorConsumptions.push(consumption);
+        totalDemand += consumption;
+    }
 
-        // Capacidade do rebocador (bobinas/min)
-        const rebocadorCapacityPerMinute = rebocadorCapacity / cycleTime;
+    // Capacidade do rebocador (bobinas/min)
+    const rebocadorCapacityPerMinute = rebocadorCapacity / cycleTime;
 
-        // Verificação de capacidade
-        const resultsDiv = document.getElementById('results');
-        if (totalDemand > rebocadorCapacityPerMinute) {
-            resultsDiv.innerHTML = `
-                <p><strong>O rebocador não consegue atender à demanda total.</strong></p>
-                <p>Demanda total: ${totalDemand.toFixed(2)} bobinas/min</p>
-                <p>Capacidade do rebocador: ${rebocadorCapacityPerMinute.toFixed(2)} bobinas/min</p>
-            `;
-            return;
-        }
-
-        // Planejamento inicial das viagens
-        let viagens = [];
-        let reservas = Array(machineCounter).fill(0); // Reserva para cada máquina
-        let totalPerMachine = Array(machineCounter).fill(0); // Total por máquina
-
-        for (let t = 0; t < 18 * 60; t += cycleTime) { // Ciclo de 18 horas
-            let viagem = Array(machineCounter).fill(0); // Viagem para cada máquina
-            let remainingCapacity = rebocadorCapacity;
-
-            // Lógica de distribuição com prioridades e reservas
-            for (let i = 0; i < machineCounter; i++) {
-                const consumoSetor = setorConsumptions[i];
-                const needed = Math.max(0, consumoSetor * cycleTime - reservas[i]);
-                const bobinas = Math.min(remainingCapacity, Math.ceil(needed));
-                viagem[i] = bobinas;
-                reservas[i] += bobinas - consumoSetor * cycleTime;
-                remainingCapacity -= bobinas;
-
-                // Acumula os totais
-                totalPerMachine[i] += bobinas;
-            }
-
-            viagens.push(viagem);
-        }
-
-        // Renderização dos resultados
+    // Verificação de capacidade
+    const resultsDiv = document.getElementById('results');
+    if (totalDemand > rebocadorCapacityPerMinute) {
         resultsDiv.innerHTML = `
-            <p><strong>O rebocador atende à demanda.</strong></p>
+            <p><strong>O rebocador não consegue atender à demanda total.</strong></p>
             <p>Demanda total: ${totalDemand.toFixed(2)} bobinas/min</p>
             <p>Capacidade do rebocador: ${rebocadorCapacityPerMinute.toFixed(2)} bobinas/min</p>
-            <table>
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        ${machineNames.map(name => `<th>${name}</th>`).join('')} <!-- Nomes das máquinas nas colunas -->
-                        <th>Atendimento</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${viagens.map((viagem, index) => `
-                        <tr>
-                            <td>${index + 1}</td>
-                            ${viagem.map(bobinas => `<td>${bobinas}</td>`).join('')}
-                            <td><button onclick="toggleCronometro(${index})">Atender</button></td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-                <tfoot>
-                    <tr>
-                        <td><strong>Total</strong></td>
-                        ${totalPerMachine.map(total => `<td><strong>${total}</strong></td>`).join('')}
-                        <td></td>
-                    </tr>
-                </tfoot>
-            </table>
         `;
+        return;
+    }
+
+    // Planejamento otimizado das viagens
+    let viagens = [];
+    let reservas = Array(machineCounter).fill(0); // Reserva para cada máquina
+    let totalPerMachine = Array(machineCounter).fill(0); // Total por máquina
+
+    // Ajuste da alocação de bobinas para cada ciclo
+    for (let t = 0; t < 18 * 60; t += cycleTime) { // Ciclo de 18 horas
+        let viagem = Array(machineCounter).fill(0); // Viagem para cada máquina
+        let remainingCapacity = rebocadorCapacity; // Capacidade restante do rebocador para o ciclo atual
+
+        // Distribuição de bobinas entre as máquinas proporcionalmente à demanda
+        let totalWeight = setorConsumptions.reduce((acc, consumption) => acc + consumption, 0);
+
+        for (let i = 0; i < machineCounter; i++) {
+            const consumoSetor = setorConsumptions[i];
+            const proportion = consumoSetor / totalWeight; // Proporção da capacidade total
+            const allocatedBobinas = Math.min(Math.floor(remainingCapacity * proportion), remainingCapacity);
+            
+            viagem[i] = allocatedBobinas;
+            remainingCapacity -= allocatedBobinas;
+            totalPerMachine[i] += allocatedBobinas; // Acumula as bobinas alocadas por máquina
+        }
+
+        viagens.push(viagem);
+    }
+
+    // Renderização dos resultados
+    resultsDiv.innerHTML = `
+        <p><strong>O rebocador atende à demanda.</strong></p>
+        <p>Demanda total: ${totalDemand.toFixed(2)} bobinas/min</p>
+        <p>Capacidade do rebocador: ${rebocadorCapacityPerMinute.toFixed(2)} bobinas/min</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    ${machineNames.map(name => `<th>${name}</th>`).join('')}
+                    <th>Atendimento</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${viagens.map((viagem, index) => `
+                    <tr>
+                        <td>${index + 1}</td>
+                        ${viagem.map(bobinas => `<td>${bobinas}</td>`).join('')}
+                        <td><button onclick="toggleCronometro(${index})">Atender</button></td>
+                    </tr>
+                `).join('')}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td><strong>Total</strong></td>
+                    ${totalPerMachine.map(total => `<td><strong>${total}</strong></td>`).join('')}
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+    `;
+
     // Aplicar a coloração azul para células com valores diferentes de 0
     const rows = document.querySelectorAll('table tbody tr');
     rows.forEach(row => {
