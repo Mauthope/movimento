@@ -217,8 +217,10 @@ function toggleCronometro(index) {
         const endTime = Date.now() - cronometroStartTime;
         const elapsedMinutes = endTime / 60000; // Convertendo milissegundos para minutos
 
-        // Registrando o tempo na célula de atendimento e colorindo
+        // Registrando o tempo na célula de atendimento
         atendimentoCell.textContent = `${elapsedMinutes.toFixed(2)} min`;
+
+        // Colorindo a célula com base no tempo de atendimento
         atendimentoCell.style.backgroundColor = (elapsedMinutes > parseFloat(document.getElementById('cycle-time').value)) ? 'red' : 'green';
 
         activeCronometer = null; // Resetando o índice do cronômetro ativo
@@ -241,7 +243,6 @@ function toggleCronometro(index) {
         }, 1000);
     }
 }
-
 
     </script>
 </body>
