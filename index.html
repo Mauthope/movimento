@@ -101,6 +101,7 @@
 
     // Função para adicionar nova máquina
     function addMachine() {
+        // Solicita o nome da máquina
         const machineName = prompt("Digite o nome da nova máquina:");
 
         if (machineName) {
@@ -109,7 +110,7 @@
             const setorContainer = document.createElement('div');
             setorContainer.id = `setor-${machineCounter}`;
             setorContainer.innerHTML = `
-                <h3>${machineName}</h3>
+                <h3>${machineName}</h3>  <!-- Exibe o nome da máquina -->
                 <label for="length-${machineCounter}">Comprimento de bobina (m):</label>
                 <input type="number" id="length-${machineCounter}" value="3000"><br><br>
                 <label for="speed-${machineCounter}">Velocidade de consumo (m/min):</label>
@@ -128,9 +129,8 @@
 
         let totalDemand = 0;
         let setorConsumptions = [];
-        let totalPerMachine = Array(machineCounter).fill(0); // Total por máquina
 
-        // Calcular o consumo de cada máquina
+        // Loop para calcular o consumo de cada máquina
         for (let i = 1; i <= machineCounter; i++) {
             const length = parseFloat(document.getElementById(`length-${i}`).value);
             const speed = parseFloat(document.getElementById(`speed-${i}`).value);
@@ -139,6 +139,7 @@
             totalDemand += consumption;
         }
 
+        // Capacidade do rebocador (bobinas/min)
         const rebocadorCapacityPerMinute = rebocadorCapacity / cycleTime;
 
         // Verificação de capacidade
@@ -155,31 +156,23 @@
         // Planejamento inicial das viagens
         let viagens = [];
         let reservas = Array(machineCounter).fill(0); // Reserva para cada máquina
-        let remainingCapacity = rebocadorCapacity;
+        let totalPerMachine = Array(machineCounter).fill(0); // Total por máquina
 
-        // Loop de 18 horas para otimizar a carga do rebocador
-        for (let t = 0; t < 18 * 60; t += cycleTime) {
+        for (let t = 0; t < 18 * 60; t += cycleTime) { // Ciclo de 18 horas
             let viagem = Array(machineCounter).fill(0); // Viagem para cada máquina
-            let availableCapacity = remainingCapacity;
+            let remainingCapacity = rebocadorCapacity;
 
-            // Tentando alocar a carga de forma eficiente, aproveitando a capacidade máxima
+            // Lógica de distribuição com prioridades e reservas
             for (let i = 0; i < machineCounter; i++) {
                 const consumoSetor = setorConsumptions[i];
-                const needed = consumoSetor * cycleTime - reservas[i];
+                const needed = Math.max(0, consumoSetor * cycleTime - reservas[i]);
+                const bobinas = Math.min(remainingCapacity, Math.ceil(needed));
+                viagem[i] = bobinas;
+                reservas[i] += bobinas - consumoSetor * cycleTime;
+                remainingCapacity -= bobinas;
 
-                // Tenta alocar a capacidade restante proporcionalmente
-                const alocar = Math.min(availableCapacity, Math.max(0, needed));
-                viagem[i] = alocar;
-                reservas[i] += alocar - consumoSetor * cycleTime;
-                availableCapacity -= alocar;
-            }
-
-            // Se sobrar capacidade, transfere para a próxima viagem
-            if (availableCapacity > 0) {
-                // Redistribuir capacidade não utilizada para a próxima viagem
-                remainingCapacity = availableCapacity;
-            } else {
-                remainingCapacity = rebocadorCapacity;  // Reseta a capacidade para o próximo ciclo
+                // Acumula os totais
+                totalPerMachine[i] += bobinas;
             }
 
             viagens.push(viagem);
@@ -194,7 +187,7 @@
                 <thead>
                     <tr>
                         <th>#</th>
-                        ${machineNames.map(name => `<th>${name}</th>`).join('')}
+                        ${machineNames.map(name => `<th>${name}</th>`).join('')} <!-- Nomes das máquinas nas colunas -->
                         <th>Atendimento</th>
                     </tr>
                 </thead>
@@ -245,6 +238,7 @@
         button.textContent = `Em andamento: ${timeSpent.toFixed(2)} min`;
     }
 </script>
+
 
 
 </body>
