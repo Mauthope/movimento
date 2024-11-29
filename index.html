@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Logística do Rebocador</title>
+    <title>Planejamento de Logística - Rebocador</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -11,7 +11,7 @@
             background: #f4f4f9;
             color: #333;
         }
-        h1 {
+        h1, h2 {
             text-align: center;
             color: #4CAF50;
         }
@@ -56,33 +56,36 @@
     </style>
 </head>
 <body>
-    <h1>Simulação de Logística do Rebocador</h1>
+    <h1>Planejamento Logístico do Rebocador</h1>
     <div class="container">
         <!-- Entrada de Dados -->
         <div class="section">
             <h2>Configuração dos Setores</h2>
-            <div>
-                <label for="imp-length">Comprimento de bobina (m) - Impressão:</label>
-                <input type="number" id="imp-length" value="3000"><br><br>
-                <label for="imp-speed">Velocidade de consumo (m/min) - Impressão:</label>
-                <input type="number" id="imp-speed" value="212"><br><br>
+            <label for="imp-length">Comprimento de bobina (m) - Impressão:</label>
+            <input type="number" id="imp-length" value="3000"><br><br>
+            <label for="imp-speed">Velocidade de consumo (m/min) - Impressão:</label>
+            <input type="number" id="imp-speed" value="212"><br><br>
 
-                <label for="lam-length">Comprimento de bobina (m) - Laminação:</label>
-                <input type="number" id="lam-length" value="2500"><br><br>
-                <label for="lam-speed">Velocidade de consumo (m/min) - Laminação:</label>
-                <input type="number" id="lam-speed" value="180"><br><br>
+            <label for="lam-length">Comprimento de bobina (m) - Laminação:</label>
+            <input type="number" id="lam-length" value="2500"><br><br>
+            <label for="lam-speed">Velocidade de consumo (m/min) - Laminação:</label>
+            <input type="number" id="lam-speed" value="180"><br><br>
 
-                <label for="f1-consumption">Bobinas por hora - F1:</label>
-                <input type="number" id="f1-consumption" value="4"><br><br>
+            <label for="cut1-consumption">Bobinas por hora - Corte 1:</label>
+            <input type="number" id="cut1-consumption" value="2"><br><br>
+            <label for="cut2-consumption">Bobinas por hora - Corte 2:</label>
+            <input type="number" id="cut2-consumption" value="2"><br><br>
 
-                <label for="cycle-time">Tempo de ciclo do rebocador (min):</label>
-                <input type="number" id="cycle-time" value="15"><br><br>
-                
-                <label for="rebocador-capacity">Capacidade do rebocador (bobinas):</label>
-                <input type="number" id="rebocador-capacity" value="6"><br><br>
+            <label for="f1-consumption">Bobinas por hora - F1:</label>
+            <input type="number" id="f1-consumption" value="4"><br><br>
 
-                <button onclick="calculate()">Simular</button>
-            </div>
+            <label for="cycle-time">Tempo de ciclo do rebocador (min):</label>
+            <input type="number" id="cycle-time" value="15"><br><br>
+            
+            <label for="rebocador-capacity">Capacidade do rebocador (bobinas):</label>
+            <input type="number" id="rebocador-capacity" value="6"><br><br>
+
+            <button onclick="simulate()">Simular</button>
         </div>
 
         <!-- Resultado -->
@@ -95,65 +98,91 @@
     </div>
 
     <script>
-        function calculate() {
+        function simulate() {
             const impLength = parseFloat(document.getElementById('imp-length').value);
             const impSpeed = parseFloat(document.getElementById('imp-speed').value);
             const lamLength = parseFloat(document.getElementById('lam-length').value);
             const lamSpeed = parseFloat(document.getElementById('lam-speed').value);
-            const f1Consumption = parseFloat(document.getElementById('f1-consumption').value);
+            const cut1Consumption = parseFloat(document.getElementById('cut1-consumption').value) / 60;
+            const cut2Consumption = parseFloat(document.getElementById('cut2-consumption').value) / 60;
+            const f1Consumption = parseFloat(document.getElementById('f1-consumption').value) / 60;
             const cycleTime = parseFloat(document.getElementById('cycle-time').value);
             const rebocadorCapacity = parseFloat(document.getElementById('rebocador-capacity').value);
 
-            // Cálculo da demanda por bobina por minuto
+            // Cálculo da demanda de bobinas por minuto
             const impDemand = 1 / (impLength / impSpeed);
             const lamDemand = 1 / (lamLength / lamSpeed);
-            const f1Demand = f1Consumption / 60;
 
-            // Cálculo do Takt Time
-            const taktImp = 1 / impDemand;
-            const taktLam = 1 / lamDemand;
-            const taktF1 = 1 / f1Demand;
+            // Demanda total de bobinas por minuto
+            const totalDemand = impDemand + lamDemand + cut1Consumption + cut2Consumption + f1Consumption;
 
-            // Distribuição por viagem
-            let viagens = [];
-            let totalDemand = impDemand + lamDemand + f1Demand;
+            // Capacidade do rebocador por minuto
+            const rebocadorCapacityPerMinute = rebocadorCapacity / cycleTime;
 
-            if (totalDemand > rebocadorCapacity / cycleTime) {
-                viagens.push("Capacidade do rebocador insuficiente para atender a demanda total.");
-            } else {
-                let remainingCapacity = rebocadorCapacity;
-                while (totalDemand > 0) {
-                    let viagem = { imp: 0, lam: 0, f1: 0 };
-                    if (remainingCapacity >= 1) {
-                        if (impDemand > 0) viagem.imp++;
-                        if (lamDemand > 0) viagem.lam++;
-                        if (f1Demand > 0) viagem.f1++;
-                        remainingCapacity--;
-                        totalDemand--;
-                    }
-                    viagens.push(viagem);
-                }
+            const resultsDiv = document.getElementById('results');
+
+            if (totalDemand > rebocadorCapacityPerMinute) {
+                resultsDiv.innerHTML = `
+                    <p><strong>O rebocador não consegue atender à demanda total.</strong></p>
+                    <p>Demanda total: ${totalDemand.toFixed(2)} bobinas/min</p>
+                    <p>Capacidade do rebocador: ${rebocadorCapacityPerMinute.toFixed(2)} bobinas/min</p>
+                `;
+                return;
             }
 
-            // Exibir resultados
-            const resultsDiv = document.getElementById("results");
+            // Planejamento das viagens
+            const totalCycles = Math.floor((18 * 60) / cycleTime);
+            let viagens = [];
+
+            for (let i = 0; i < totalCycles; i++) {
+                let viagem = { imp: 0, lam: 0, cut1: 0, cut2: 0, f1: 0 };
+                let remainingCapacity = rebocadorCapacity;
+
+                if (remainingCapacity > 0 && impDemand > 0) {
+                    viagem.imp++;
+                    remainingCapacity--;
+                }
+                if (remainingCapacity > 0 && lamDemand > 0) {
+                    viagem.lam++;
+                    remainingCapacity--;
+                }
+                if (remainingCapacity > 0 && cut1Consumption > 0) {
+                    viagem.cut1++;
+                    remainingCapacity--;
+                }
+                if (remainingCapacity > 0 && cut2Consumption > 0) {
+                    viagem.cut2++;
+                    remainingCapacity--;
+                }
+                if (remainingCapacity > 0 && f1Consumption > 0) {
+                    viagem.f1++;
+                    remainingCapacity--;
+                }
+
+                viagens.push(viagem);
+            }
+
             resultsDiv.innerHTML = `
-                <p><strong>Takt Time Impressão:</strong> ${taktImp.toFixed(2)} min</p>
-                <p><strong>Takt Time Laminação:</strong> ${taktLam.toFixed(2)} min</p>
-                <p><strong>Takt Time F1:</strong> ${taktF1.toFixed(2)} min</p>
+                <p><strong>O rebocador atende à demanda.</strong></p>
+                <p>Demanda total: ${totalDemand.toFixed(2)} bobinas/min</p>
+                <p>Capacidade do rebocador: ${rebocadorCapacityPerMinute.toFixed(2)} bobinas/min</p>
                 <table>
                     <tr>
                         <th>Viagem</th>
                         <th>Impressão</th>
                         <th>Laminação</th>
+                        <th>Corte 1</th>
+                        <th>Corte 2</th>
                         <th>F1</th>
                     </tr>
                     ${viagens.map((v, i) => `
                         <tr>
                             <td>${i + 1}</td>
-                            <td>${v.imp || '-'}</td>
-                            <td>${v.lam || '-'}</td>
-                            <td>${v.f1 || '-'}</td>
+                            <td>${v.imp}</td>
+                            <td>${v.lam}</td>
+                            <td>${v.cut1}</td>
+                            <td>${v.cut2}</td>
+                            <td>${v.f1}</td>
                         </tr>
                     `).join('')}
                 </table>
