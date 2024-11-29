@@ -53,6 +53,10 @@
         button:hover {
             background: #45a049;
         }
+        .btn-group {
+            display: flex;
+            justify-content: space-around;
+        }
         .red {
             background-color: red !important;
         }
@@ -96,13 +100,10 @@
 
             // Lógica de planejamento
             let viagens = [];
+            let totalImp = 0, totalLam = 0, totalCut1 = 0, totalCut2 = 0;
+
             for (let i = 0; i < 10; i++) { // Exemplo de 10 viagens
-                let viagem = {
-                    imp1: Math.random() * 10, imp2: Math.random() * 10, imp3: Math.random() * 10,
-                    lam1: Math.random() * 10, lam2: Math.random() * 10, lam3: Math.random() * 10, lam4: Math.random() * 10,
-                    cut1: Math.random() * 10, cut2: Math.random() * 10,
-                    atendimento: 0
-                };
+                let viagem = { imp: Math.random() * 10, lam: Math.random() * 10, cut1: Math.random() * 10, cut2: Math.random() * 10, atendimento: 0 };
                 viagens.push(viagem);
             }
 
@@ -112,13 +113,8 @@
                 <table>
                     <tr>
                         <th>Viagem</th>
-                        <th>Impressora 1</th>
-                        <th>Impressora 2</th>
-                        <th>Impressora 3</th>
-                        <th>Laminadora 1</th>
-                        <th>Laminadora 2</th>
-                        <th>Laminadora 3</th>
-                        <th>Laminadora 4</th>
+                        <th>Impressão</th>
+                        <th>Laminação</th>
                         <th>Corte 1</th>
                         <th>Corte 2</th>
                         <th>Atendimento</th>
@@ -126,13 +122,8 @@
                     ${viagens.map((viagem, index) => `
                         <tr>
                             <td>${index + 1}</td>
-                            <td>${viagem.imp1.toFixed(2)}</td>
-                            <td>${viagem.imp2.toFixed(2)}</td>
-                            <td>${viagem.imp3.toFixed(2)}</td>
-                            <td>${viagem.lam1.toFixed(2)}</td>
-                            <td>${viagem.lam2.toFixed(2)}</td>
-                            <td>${viagem.lam3.toFixed(2)}</td>
-                            <td>${viagem.lam4.toFixed(2)}</td>
+                            <td>${viagem.imp.toFixed(2)}</td>
+                            <td>${viagem.lam.toFixed(2)}</td>
                             <td>${viagem.cut1.toFixed(2)}</td>
                             <td>${viagem.cut2.toFixed(2)}</td>
                             <td><button class="attend-btn" onclick="toggleCronometro(${index}, ${cycleTime}, this)">Atender</button></td>
@@ -150,7 +141,9 @@
             if (activeCronometer === index) {
                 clearInterval(cronometroInterval);
                 const totalTime = parseInt(cronometroValue.textContent); // Obtém o tempo registrado
+                // Registra o tempo final
                 cronometroValue.textContent = totalTime; 
+                // Verifica a cor do botão
                 if (totalTime > cycleTime) {
                     button.classList.add('red');
                     button.classList.remove('green');
@@ -161,6 +154,7 @@
                 activeCronometer = null;
                 button.textContent = 'Atender';
             } else {
+                // Se outro cronômetro estiver ativo, finaliza e registra o tempo
                 if (activeCronometer !== null) {
                     const prevButton = document.querySelectorAll('table tr')[activeCronometer + 1].querySelector('button');
                     clearInterval(cronometroInterval);
@@ -170,12 +164,13 @@
                 }
 
                 activeCronometer = index;
-                let startTime = Date.now(); 
+                let startTime = Date.now(); // Guarda o momento de início
 
                 button.textContent = 'Finalizar Atendimento';
 
+                // Inicia o cronômetro
                 cronometroInterval = setInterval(() => {
-                    let elapsedTime = Math.floor((Date.now() - startTime) / 1000); 
+                    let elapsedTime = Math.floor((Date.now() - startTime) / 1000); // Tempo em segundos
                     atendimentoCell.textContent = elapsedTime;
                 }, 1000);
             }
