@@ -157,22 +157,44 @@
         let viagens = [];
         let reservas = Array(machineCounter).fill(0); // Reserva para cada máquina
         let totalPerMachine = Array(machineCounter).fill(0); // Total por máquina
+        let remainingCapacity = rebocadorCapacity;
 
+        // Ciclo de 18 horas (ou o número de minutos especificado) de alocação
         for (let t = 0; t < 18 * 60; t += cycleTime) { // Ciclo de 18 horas
             let viagem = Array(machineCounter).fill(0); // Viagem para cada máquina
-            let remainingCapacity = rebocadorCapacity;
 
-            // Lógica de distribuição com prioridades e reservas
+            // Lógica de distribuição de capacidade, buscando maximizar o uso do rebocador
             for (let i = 0; i < machineCounter; i++) {
                 const consumoSetor = setorConsumptions[i];
-                const needed = Math.max(0, consumoSetor * cycleTime - reservas[i]);
-                const bobinas = Math.min(remainingCapacity, Math.ceil(needed));
-                viagem[i] = bobinas;
-                reservas[i] += bobinas - consumoSetor * cycleTime;
-                remainingCapacity -= bobinas;
+                const needed = consumoSetor * cycleTime;
+                let allocated = 0;
 
-                // Acumula os totais
-                totalPerMachine[i] += bobinas;
+                // Tenta alocar o máximo de capacidade disponível
+                if (remainingCapacity >= needed) {
+                    allocated = needed; // A alocação é total, pois temos capacidade suficiente
+                    remainingCapacity -= needed;
+                } else {
+                    allocated = remainingCapacity; // Se não houver capacidade suficiente, aloca o restante
+                    remainingCapacity = 0;
+                }
+
+                viagem[i] = allocated;
+                reservas[i] += allocated;
+                totalPerMachine[i] += allocated;
+            }
+
+            // Se sobrou capacidade, redistribui nas próximas viagens
+            if (remainingCapacity > 0) {
+                // Redistribui a capacidade remanescente
+                for (let i = 0; i < machineCounter; i++) {
+                    if (remainingCapacity > 0) {
+                        const consumoSetor = setorConsumptions[i];
+                        const maxAllocable = consumoSetor * cycleTime;
+                        const allocated = Math.min(remainingCapacity, maxAllocable);
+                        viagem[i] += allocated;
+                        remainingCapacity -= allocated;
+                    }
+                }
             }
 
             viagens.push(viagem);
@@ -238,7 +260,6 @@
         button.textContent = `Em andamento: ${timeSpent.toFixed(2)} min`;
     }
 </script>
-
 
 
 </body>
