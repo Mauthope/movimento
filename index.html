@@ -154,33 +154,30 @@
                 let viagem = { imp: 0, lam: 0, cut1: 0, cut2: 0, f1: 0 };
                 let remainingCapacity = rebocadorCapacity;
 
-                // Lógica de distribuição com F1 recebendo toda a capacidade
-                if (t % (18 * 60 / 5) === 0) { // A cada 1/5 do ciclo, F1 recebe total da capacidade
-                    viagem.f1 = rebocadorCapacity;
-                    reservas.f1 += rebocadorCapacity;
-                    remainingCapacity = 0; // Não há mais bobinas para os outros setores
-                } else {
-                    // Os outros setores recebem bobinas conforme suas necessidades
-                    ["imp", "lam", "cut1", "cut2"].forEach((setor) => {
-                        const consumoSetor = {
-                            imp: impConsumption,
-                            lam: lamConsumption,
-                            cut1: cut1Consumption,
-                            cut2: cut2Consumption,
-                        }[setor];
-
-                        const alocado = Math.min(consumoSetor, remainingCapacity);
-                        viagem[setor] = alocado;
-                        reservas[setor] += alocado;
-                        remainingCapacity -= alocado;
-                    });
+                // Dedicar toda a capacidade do rebocador ao F1
+                const f1Needed = f1Consumption * cycleTime - reservas.f1;
+                if (remainingCapacity >= f1Needed) {
+                    viagem.f1 = f1Needed;
+                    reservas.f1 += f1Needed;
+                    remainingCapacity -= f1Needed;
                 }
+
+                // Alocar o restante do rebocador aos outros setores
+                ["imp", "lam", "cut1", "cut2"].forEach(sector => {
+                    const sectorConsumption = eval(`${sector}Consumption`) * cycleTime - reservas[sector];
+                    if (remainingCapacity >= sectorConsumption) {
+                        viagem[sector] = sectorConsumption;
+                        reservas[sector] += sectorConsumption;
+                        remainingCapacity -= sectorConsumption;
+                    }
+                });
 
                 viagens.push(viagem);
             }
 
-            // Exibir o resultado da matriz de viagens
+            // Exibir os resultados de viagem
             resultsDiv.innerHTML = `
+                <h3>Distribuição de Bobinas por Viagem (18 horas)</h3>
                 <table>
                     <tr>
                         <th>Viagem</th>
@@ -193,11 +190,11 @@
                     ${viagens.map((v, i) => `
                         <tr>
                             <td>Viagem ${i + 1}</td>
-                            <td>${v.imp}</td>
-                            <td>${v.lam}</td>
-                            <td>${v.cut1}</td>
-                            <td>${v.cut2}</td>
-                            <td>${v.f1}</td>
+                            <td>${v.imp.toFixed(2)}</td>
+                            <td>${v.lam.toFixed(2)}</td>
+                            <td>${v.cut1.toFixed(2)}</td>
+                            <td>${v.cut2.toFixed(2)}</td>
+                            <td>${v.f1.toFixed(2)}</td>
                         </tr>
                     `).join('')}
                 </table>
