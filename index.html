@@ -5,7 +5,61 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Planejamento Logístico - Rebocador</title>
     <style>
-        /* Seus estilos aqui */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f4f4f9;
+            color: #333;
+        }
+        h1, h2 {
+            text-align: center;
+            color: #4CAF50;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .section {
+            background: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            flex: 1;
+            min-width: 300px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            text-align: center;
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+        th {
+            background: #4CAF50;
+            color: white;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .btn-group {
+            display: flex;
+            justify-content: space-around;
+        }
+        .active {
+            background-color: #2196F3;
+        }
     </style>
 </head>
 <body>
@@ -38,8 +92,8 @@
     </div>
 
 <script>
-    let machineCounter = 0;
-    let machineNames = [];
+    let machineCounter = 0; // Contador para máquinas
+    let machineNames = []; // Array para armazenar os nomes das máquinas
     let activeCronometer = null;
     let cronometroInterval = null;
     let cronometroStartTime = null;
@@ -56,7 +110,7 @@
             const setorContainer = document.createElement('div');
             setorContainer.id = `setor-${machineCounter}`;
             setorContainer.innerHTML = `
-                <h3>${machineName}</h3> 
+                <h3>${machineName}</h3>  <!-- Exibe o nome da máquina -->
                 <label for="length-${machineCounter}">Comprimento de bobina (m):</label>
                 <input type="number" id="length-${machineCounter}" value="3000"><br><br>
                 <label for="speed-${machineCounter}">Velocidade de consumo (m/min):</label>
@@ -103,7 +157,6 @@
         let viagens = [];
         let reservas = Array(machineCounter).fill(0); // Reserva para cada máquina
         let totalPerMachine = Array(machineCounter).fill(0); // Total por máquina
-        let totalTimeAccumulated = 0; // Tempo acumulado
 
         for (let t = 0; t < 18 * 60; t += cycleTime) { // Ciclo de 18 horas
             let viagem = Array(machineCounter).fill(0); // Viagem para cada máquina
@@ -123,7 +176,6 @@
             }
 
             viagens.push(viagem);
-            totalTimeAccumulated += cycleTime; // Acumula o tempo de ciclo
         }
 
         // Renderização dos resultados
@@ -131,13 +183,11 @@
             <p><strong>O rebocador atende à demanda.</strong></p>
             <p>Demanda total: ${totalDemand.toFixed(2)} bobinas/min</p>
             <p>Capacidade do rebocador: ${rebocadorCapacityPerMinute.toFixed(2)} bobinas/min</p>
-            <p><strong>Tempo Total Acumulado: ${totalTimeAccumulated} minutos</strong></p>
             <table>
                 <thead>
                     <tr>
                         <th>#</th>
-                        ${machineNames.map(name => `<th>${name}</th>`).join('')} 
-                        <th>Tempo Acumulado (min)</th>
+                        ${machineNames.map(name => `<th>${name}</th>`).join('')} <!-- Nomes das máquinas nas colunas -->
                         <th>Atendimento</th>
                     </tr>
                 </thead>
@@ -146,7 +196,6 @@
                         <tr>
                             <td>${index + 1}</td>
                             ${viagem.map(bobinas => `<td>${bobinas}</td>`).join('')}
-                            <td>${totalTimeAccumulated}</td>
                             <td><button onclick="toggleCronometro(${index})">Atender</button></td>
                         </tr>
                     `).join('')}
@@ -160,8 +209,19 @@
                 </tfoot>
             </table>
         `;
-    }
-    
+    // Aplicar a coloração azul para células com valores diferentes de 0
+    const rows = document.querySelectorAll('table tbody tr');
+    rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        for (let i = 1; i < cells.length - 1; i++) {  // Ignora a primeira (número) e a última (botão)
+            const value = parseFloat(cells[i].textContent);
+            if (value !== 0) {
+                cells[i].style.backgroundColor = 'blue'; // Aplica o fundo azul
+            }
+        }
+    });
+}
+
     // Função para alternar o cronômetro de atendimento
     function toggleCronometro(index) {
         const viagem = document.querySelectorAll('table tr')[index + 1];
@@ -169,10 +229,12 @@
         const atendimentoCell = viagem.querySelector('td:last-child');
 
         if (atendimentoBtn.textContent === "Atender") {
+            // Iniciar cronômetro
             atendimentoBtn.textContent = "Finalizar";
             cronometroStartTime = Date.now();
             cronometroInterval = setInterval(() => updateCronometro(atendimentoBtn), 1000);
         } else {
+            // Finalizar cronômetro
             const timeSpent = (Date.now() - cronometroStartTime) / 60000; // Tempo em minutos
             clearInterval(cronometroInterval);
             cronometroInterval = null;
@@ -187,5 +249,8 @@
         button.textContent = `Em andamento: ${timeSpent.toFixed(2)} min`;
     }
 </script>
+
+
+
 </body>
 </html>
