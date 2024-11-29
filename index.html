@@ -1,322 +1,159 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Fluxo Logístico do Rebocador</title>
+  <title>Distribuição de Bobinas</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      background-color: #f4f4f9;
-      color: #333;
-    }
-
-    header {
-      background-color: #004aad;
-      color: white;
-      padding: 1.5rem;
-      text-align: center;
-      font-size: 1.5rem;
-    }
-
-    main {
-      max-width: 1200px;
-      margin: 2rem auto;
-      padding: 1rem;
-      background-color: white;
-      box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-      border-radius: 10px;
-    }
-
-    .container {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 2rem;
-    }
-
-    .column {
-      flex: 1;
-      min-width: 300px;
-    }
-
-    h2 {
-      margin-bottom: 1rem;
-      color: #004aad;
-    }
-
-    label {
-      display: block;
-      margin-bottom: 0.5rem;
-      font-weight: bold;
-    }
-
-    input {
-      padding: 0.5rem;
-      margin-bottom: 1rem;
-      width: 100%;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-    }
-
-    button {
-      padding: 0.7rem 1.5rem;
-      background-color: #004aad;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      transition: background-color 0.3s;
-    }
-
-    button:hover {
-      background-color: #003380;
-    }
-
-    .result-section {
-      margin-top: 2rem;
-      text-align: center;
-    }
-
-    #result-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 1rem;
-    }
-
-    #result-table th, #result-table td {
-      border: 1px solid #ddd;
-      padding: 0.8rem;
-      text-align: center;
-    }
-
-    #result-table th {
-      background-color: #004aad;
-      color: white;
-    }
-
-    #distribution-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 2rem;
-    }
-
-    #distribution-table th, #distribution-table td {
-      border: 1px solid #ddd;
-      padding: 0.8rem;
-      text-align: center;
-    }
-
-    #distribution-table th {
-      background-color: #004aad;
-      color: white;
-    }
-
-    #status {
-      font-weight: bold;
-      margin-top: 1rem;
-      padding: 1rem;
-      border-radius: 5px;
-    }
-
-    #status.success {
-      background-color: #d4edda;
-      color: #155724;
-    }
-
-    #status.error {
-      background-color: #f8d7da;
-      color: #721c24;
-    }
+    .success { color: green; }
+    .error { color: red; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    td, th { border: 1px solid #ddd; padding: 8px; text-align: center; }
   </style>
 </head>
 <body>
-  <header>
-    Fluxo Logístico do Rebocador
-  </header>
-  <main>
-    <div class="container">
-      <div class="column">
-        <h2>Configuração do Rebocador</h2>
-        <label>
-          Capacidade Máxima (bobinas):
-          <input type="number" id="capacity" value="6" min="1">
-        </label>
-        <label>
-          Tempo de Ciclo (min):
-          <input type="number" id="cycleTime" value="15" min="1">
-        </label>
-      </div>
-      <div class="column">
-        <h2>Configuração dos Setores</h2>
-        <div id="sector-configs"></div>
-      </div>
-    </div>
-    <button id="calculate">Calcular</button>
-    <section class="result-section">
-      <h2>Resultados</h2>
-      <table id="result-table">
-        <thead>
-          <tr>
-            <th>Setor</th>
-            <th>Dados de Consumo</th>
-            <th>Demanda (bobinas/min)</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-      <table id="distribution-table">
-        <thead>
-          <tr>
-            <th>Viagem</th>
-            <th>Impressoras (1, 2, 3)</th>
-            <th>Laminadoras (1, 2, 3, 4)</th>
-            <th>Corte 1</th>
-            <th>Corte 2</th>
-            <th>F1</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-      <p id="status"></p>
-    </section>
-  </main>
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      const sectors = [
-        { name: "Impressoras (1, 2, 3)", consumption: 3000, speed: 212, multiplier: 3, isBobinasPerHour: false },
-        { name: "Laminadoras (1, 2, 3, 4)", consumption: 4000, speed: 150, multiplier: 4, isBobinasPerHour: false },
-        { name: "Corte 1", consumption: 1500, speed: 100, multiplier: 1, isBobinasPerHour: false },
-        { name: "Corte 2", consumption: 2000, speed: 120, multiplier: 1, isBobinasPerHour: false },
-        { name: "F1", bobinasPerHour: 60, multiplier: 1, isBobinasPerHour: true }
-      ];
+  <h1>Distribuição de Bobinas</h1>
 
-      const sectorConfigs = document.getElementById("sector-configs");
+  <label for="capacity">Capacidade do Rebocador (Bobinas por minuto):</label>
+  <input type="number" id="capacity" placeholder="Capacidade do rebocador">
+  <br>
+  <label for="cycleTime">Tempo de ciclo (minutos):</label>
+  <input type="number" id="cycleTime" placeholder="Tempo de ciclo">
+  <br>
+  <button id="calculateBtn">Calcular</button>
+
+  <h2>Status</h2>
+  <p id="statusText"></p>
+
+  <h2>Tabela de Resultados</h2>
+  <table id="resultTable">
+    <thead>
+      <tr>
+        <th>Setor</th>
+        <th>Consumo / Velocidade</th>
+        <th>Demanda por Minuto</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Dados dinâmicos serão inseridos aqui -->
+    </tbody>
+  </table>
+
+  <h2>Tabela de Distribuição</h2>
+  <table id="distributionTable">
+    <thead>
+      <tr>
+        <th>Viagem</th>
+        <th>Setor 1</th>
+        <th>Setor 2</th>
+        <th>Setor 3</th>
+        <th>Setor 4</th>
+        <th>Setor 5</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Distribuições dinâmicas serão inseridas aqui -->
+    </tbody>
+  </table>
+
+  <script>
+    document.getElementById("calculateBtn").addEventListener("click", function () {
       const capacityInput = document.getElementById("capacity");
       const cycleTimeInput = document.getElementById("cycleTime");
-      const resultTable = document.querySelector("#result-table tbody");
-      const distributionTable = document.querySelector("#distribution-table tbody");
-      const statusText = document.getElementById("status");
+      const statusText = document.getElementById("statusText");
+      const resultTable = document.getElementById("resultTable").getElementsByTagName('tbody')[0];
+      const distributionTable = document.getElementById("distributionTable").getElementsByTagName('tbody')[0];
 
-      // Render inputs for sectors
-      sectors.forEach((sector, index) => {
+      // Setores (exemplo com dados)
+      const sectors = [
+        { name: "Setor 1", consumption: 100, speed: 2, isBobinasPerHour: false, multiplier: 1 },
+        { name: "Setor 2", consumption: 80, speed: 3, isBobinasPerHour: false, multiplier: 1 },
+        { name: "Setor 3", consumption: 150, speed: 4, isBobinasPerHour: false, multiplier: 1 },
+        { name: "Setor 4", bobinasPerHour: 120, isBobinasPerHour: true, multiplier: 1 },
+        { name: "Setor 5", bobinasPerHour: 90, isBobinasPerHour: true, multiplier: 1 }
+      ];
+
+      // Limpar as tabelas e o status anterior
+      resultTable.innerHTML = "";
+      distributionTable.innerHTML = "";
+      statusText.textContent = "";
+
+      const rebocadorCapacity = parseFloat(capacityInput.value) || 0;
+      const cycleTime = parseFloat(cycleTimeInput.value) || 0;
+
+      let totalDemandPerMinute = 0;
+      sectors.forEach(sector => {
+        if (!sector.isBobinasPerHour) {
+          // Calcula demanda por bobina por minuto
+          const bobinasPerMinute = (sector.consumption / sector.speed) / 60;
+          totalDemandPerMinute += bobinasPerMinute * sector.multiplier;
+        } else {
+          // Usa o valor diretamente para bobinas por hora
+          totalDemandPerMinute += sector.bobinasPerHour / 60;
+        }
+      });
+
+      const rebocadorCapacityPerMinute = rebocadorCapacity / cycleTime;
+
+      if (totalDemandPerMinute <= rebocadorCapacityPerMinute) {
+        statusText.textContent = "O rebocador tem capacidade suficiente!";
+        statusText.className = "success";
+      } else {
+        statusText.textContent = "A capacidade do rebocador não é suficiente.";
+        statusText.className = "error";
+      }
+
+      // Preencher a tabela de resultados
+      sectors.forEach(sector => {
+        const tr = document.createElement("tr");
         if (sector.isBobinasPerHour) {
-          sectorConfigs.innerHTML += `
-            <div>
-              <h4>${sector.name}</h4>
-              <label>Número de Bobinas por Hora:
-                <input type="number" value="${sector.bobinasPerHour}" data-index="${index}" data-key="bobinasPerHour">
-              </label>
-            </div>
-          `;
+          const bobinasPerMinute = sector.bobinasPerHour / 60;
+          tr.innerHTML = `<td>${sector.name}</td><td>Bobinas por Hora: ${sector.bobinasPerHour}</td><td>${bobinasPerMinute.toFixed(4)}</td>`;
         } else {
-          sectorConfigs.innerHTML += `
-            <div>
-              <h4>${sector.name}</h4>
-              <label>Comprimento da Bobina (m):
-                <input type="number" value="${sector.consumption}" data-index="${index}" data-key="consumption">
-              </label>
-              <label>Velocidade (m/min):
-                <input type="number" value="${sector.speed}" data-index="${index}" data-key="speed">
-              </label>
-            </div>
-          `;
+          const bobinasPerMinute = (sector.consumption / sector.speed) / 60;
+          tr.innerHTML = `<td>${sector.name}</td><td>${sector.consumption}m, ${sector.speed}m/min</td><td>${bobinasPerMinute.toFixed(4)}</td>`;
         }
+        resultTable.appendChild(tr);
       });
 
-      sectorConfigs.addEventListener("input", (event) => {
-        const index = event.target.dataset.index;
-        const key = event.target.dataset.key;
-        sectors[index][key] = parseFloat(event.target.value) || 0;
-      });
+      // Cálculo da distribuição de bobinas
+      const trips = [];
+      let remainingDemand = [...sectors];
+      let tripCounter = 1;
 
-      document.getElementById("calculate").addEventListener("click", () => {
-        // Clean previous results
-        resultTable.innerHTML = "";
-        distributionTable.innerHTML = "";
-        statusText.textContent = "";
-        
-        const rebocadorCapacity = parseFloat(capacityInput.value) || 0;
-        const cycleTime = parseFloat(cycleTimeInput.value) || 0;
+      while (remainingDemand.some(sector => (sector.consumption > 0 || sector.bobinasPerHour > 0))) {
+        const trip = [];
+        let totalBobinasForTrip = 0;
 
-        let totalDemandPerMinute = 0;
-        sectors.forEach(sector => {
-          if (!sector.isBobinasPerHour) {
-            // Calcula demanda por bobina por minuto
-            const bobinasPerMinute = (sector.consumption / sector.speed) / 60;
-            totalDemandPerMinute += bobinasPerMinute * sector.multiplier;
-          } else {
-            // Usa o valor diretamente para F1
-            totalDemandPerMinute += sector.bobinasPerHour / 60;
-          }
-        });
-
-        const rebocadorCapacityPerMinute = rebocadorCapacity / cycleTime;
-
-        if (totalDemandPerMinute <= rebocadorCapacityPerMinute) {
-          statusText.textContent = "O rebocador tem capacidade suficiente!";
-          statusText.className = "success";
-        } else {
-          statusText.textContent = "A capacidade do rebocador não é suficiente.";
-          statusText.className = "error";
-        }
-
-        // Populate result table
-        sectors.forEach(sector => {
-          const tr = document.createElement("tr");
+        remainingDemand.forEach(sector => {
+          let bobinasForSector = 0;
           if (sector.isBobinasPerHour) {
-            const bobinasPerMinute = sector.bobinasPerHour / 60;
-            tr.innerHTML = `<td>${sector.name}</td><td>Bobinas por Hora: ${sector.bobinasPerHour}</td><td>${bobinasPerMinute.toFixed(4)}</td>`;
+            bobinasForSector = sector.bobinasPerHour / 60;
           } else {
-            const bobinasPerMinute = (sector.consumption / sector.speed) / 60;
-            tr.innerHTML = `<td>${sector.name}</td><td>${sector.consumption}m, ${sector.speed}m/min</td><td>${bobinasPerMinute.toFixed(4)}</td>`;
+            bobinasForSector = (sector.consumption / sector.speed) / 60;
           }
-          resultTable.appendChild(tr);
+
+          if (totalBobinasForTrip + bobinasForSector <= rebocadorCapacityPerMinute) {
+            trip.push(1);
+            totalBobinasForTrip += bobinasForSector;
+            if (!sector.isBobinasPerHour) {
+              sector.consumption -= bobinasForSector;
+            }
+          } else {
+            trip.push(0);
+          }
         });
 
-        // Calculate and populate distribution table
-        let travelCounter = 1;
-        let remainingDemand = [...sectors];
-        let trips = [];
-        while (remainingDemand.some(demand => demand.isBobinasPerHour || demand.consumption > 0)) {
-          let trip = [];
-          let totalBobinas = 0;
+        trips.push(trip);
+        tripCounter++;
+      }
 
-          remainingDemand.forEach((sector, index) => {
-            let bobinasForTrip = 0;
-            if (sector.isBobinasPerHour) {
-              bobinasForTrip = sector.bobinasPerHour / 60;
-            } else {
-              bobinasForTrip = (sector.consumption / sector.speed) / 60;
-            }
-
-            if (totalBobinas + bobinasForTrip <= rebocadorCapacityPerMinute) {
-              trip.push(1);
-              totalBobinas += bobinasForTrip;
-              if (!sector.isBobinasPerHour) {
-                sector.consumption -= bobinasForTrip;
-              }
-            } else {
-              trip.push(0);
-            }
-          });
-
-          trips.push(trip);
-          remainingDemand.forEach((sector, index) => {
-            if (trip[index] === 1 && sector.isBobinasPerHour) {
-              sector.bobinasPerHour = 0;
-            }
-          });
-
-          travelCounter++;
-        }
-
-        trips.forEach((trip, index) => {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `<td>${index + 1}</td><td>${trip[0]}</td><td>${trip[1]}</td><td>${trip[2]}</td><td>${trip[3]}</td><td>${trip[4]}</td>`;
-          distributionTable.appendChild(tr);
-        });
+      // Preencher a tabela de distribuição
+      trips.forEach((trip, index) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${index + 1}</td>` +
+          trip.map((sector, i) => `<td>${sector ? "Sim" : "Não"}</td>`).join('');
+        distributionTable.appendChild(tr);
       });
     });
   </script>
