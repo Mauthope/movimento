@@ -60,9 +60,6 @@
         .active {
             background-color: #2196F3;
         }
-        .hidden {
-            visibility: hidden;
-        }
     </style>
 </head>
 <body>
@@ -209,30 +206,29 @@
         function toggleCronometro(index) {
             const viagem = document.querySelectorAll('table tr')[index + 1];
             const atendimentoBtn = viagem.querySelector('button');
-            const atendimentoCell = viagem.querySelectorAll('td')[machineCounter]; // Coluna de Atendimento
+            const atendimentoCell = viagem.querySelector('td:last-child');
 
-            if (activeCronometer === index) {
-                clearInterval(cronometroInterval);
-                atendimentoBtn.textContent = 'Atender';
-                const endTime = Date.now() - cronometroStartTime;
-                viagemTimes.push(endTime);
-                activeCronometer = null;
-                atendimentoBtn.classList.remove('active');
-                atendimentoCell.innerHTML = `Tempo: ${formatTime(endTime)}`;
-            } else {
+            if (activeCronometer === null) {
                 activeCronometer = index;
+                atendimentoBtn.textContent = 'Em andamento';
+                atendimentoCell.style.backgroundColor = '#f3f3f3'; // Cor de andamento
+                atendimentoBtn.disabled = true;
                 cronometroStartTime = Date.now();
-                cronometroInterval = setInterval(() => {}, 1000);
-                atendimentoBtn.textContent = 'Finalizar';
-                atendimentoBtn.classList.add('active');
+                cronometroInterval = setInterval(() => updateCronometro(), 1000);
+            } else {
+                const timeSpent = (Date.now() - cronometroStartTime) / 60000; // Tempo em minutos
+                clearInterval(cronometroInterval);
+                cronometroInterval = null;
+                atendimentoBtn.textContent = `Finalizado: ${timeSpent.toFixed(2)} min`;
+                atendimentoCell.style.backgroundColor = timeSpent > parseFloat(document.getElementById('cycle-time').value) ? 'red' : 'green';
+                activeCronometer = null;
             }
         }
 
-        // Função para formatar o tempo em minutos
-        function formatTime(time) {
-            const minutes = Math.floor(time / 60000);
-            const seconds = Math.floor((time % 60000) / 1000);
-            return `${minutes}m ${seconds}s`;
+        // Função para atualizar o cronômetro
+        function updateCronometro() {
+            const timeSpent = (Date.now() - cronometroStartTime) / 60000; // Tempo em minutos
+            document.querySelectorAll('button')[activeCronometer].textContent = `Em andamento: ${timeSpent.toFixed(2)} min`;
         }
     </script>
 </body>
