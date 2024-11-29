@@ -202,23 +202,28 @@
             `;
         }
 
-// Função para alternar o cronômetro de atendimento e aplicar a coloração
+let activeCronometer = null;  // Para controlar qual cronômetro está ativo
+let cronometroInterval = null; // Para controlar o intervalo do cronômetro
+let cronometroStartTime = null; // Para armazenar o momento de início do cronômetro
+
+// Função para alternar o cronômetro e aplicar a coloração
 function toggleCronometro(index) {
-    const viagem = document.querySelectorAll('table tr')[index + 2]; // Linha da viagem
-    const atendimentoBtn = viagem.querySelector('button'); // Botão de atendimento
-    const atendimentoCell = viagem.querySelectorAll('td')[machineCounter]; // Coluna de Atendimento
+    const rows = document.querySelectorAll('table tr'); // Pega todas as linhas da tabela
+    const row = rows[index + 1]; // Linha da viagem (index + 1 para ignorar o cabeçalho da tabela)
+    const atendimentoCell = row.querySelectorAll('td')[2]; // A coluna "Atendimento" (supondo que a coluna "Atendimento" seja a 3ª, ou seja, índice 2)
+    const atendimentoBtn = row.querySelector('button'); // Botão "Atender"
 
     if (activeCronometer === index) {
         // Se o cronômetro já está ativo e é clicado novamente, para o cronômetro
         clearInterval(cronometroInterval);
-        atendimentoBtn.textContent = 'Atender'; // Muda o texto do botão
+        atendimentoBtn.textContent = 'Atender'; // Muda o texto do botão de volta
         const endTime = Date.now() - cronometroStartTime;
         const elapsedMinutes = endTime / 60000; // Converte o tempo para minutos
 
         // Atualiza a célula de "Atendimento" com o tempo decorrido
         atendimentoCell.textContent = `${elapsedMinutes.toFixed(2)} min`;
 
-        // Aplica a cor de fundo na célula de acordo com o tempo (vermelho se ultrapassar o tempo de ciclo)
+        // Aplica a cor de fundo da célula "Atendimento" (vermelho se ultrapassar o tempo de ciclo)
         atendimentoCell.style.backgroundColor = (elapsedMinutes > parseFloat(document.getElementById('cycle-time').value)) ? 'red' : 'green';
 
         // Desativa o cronômetro
@@ -227,8 +232,8 @@ function toggleCronometro(index) {
         // Se o cronômetro não está ativo, ativa para essa viagem
         if (activeCronometer !== null) {
             // Se já havia outro cronômetro ativo, para ele
-            const prevViagem = document.querySelectorAll('table tr')[activeCronometer + 1];
-            prevViagem.querySelector('button').textContent = 'Atender'; // Restaura o texto do botão
+            const prevRow = rows[activeCronometer + 1];
+            prevRow.querySelector('button').textContent = 'Atender'; // Restaura o texto do botão
         }
 
         // Ativa o cronômetro para a nova viagem
@@ -239,7 +244,7 @@ function toggleCronometro(index) {
         // Atualiza o cronômetro a cada segundo
         cronometroInterval = setInterval(() => {
             const elapsedTime = Date.now() - cronometroStartTime; // Tempo decorrido em milissegundos
-            atendimentoCell.textContent = `${(elapsedTime / 60000).toFixed(2)} min`; // Exibe o tempo decorrido em minutos
+            atendimentoCell.textContent = `${(elapsedTime / 60000).toFixed(2)} min`; // Exibe o tempo decorrido na célula "Atendimento"
         }, 1000);
     }
 }
