@@ -211,7 +211,7 @@ function toggleCronometro(index) {
 
     if (activeCronometer === index) {
         clearInterval(cronometroInterval); // Parar o cronômetro
-        atendimentoBtn.textContent = 'Atender'; // Resetando o texto do botão
+        atendimentoBtn.textContent = 'Atender'; // Resetando o texto do botão de volta para "Atender"
 
         // Calculando o tempo gasto (em minutos)
         const endTime = Date.now() - cronometroStartTime;
@@ -238,12 +238,17 @@ function toggleCronometro(index) {
 
         atendimentoBtn.textContent = 'Parar'; // Mudando o texto do botão para "Parar"
 
+        // Garantindo que o cronômetro será exibido corretamente sem substituir o botão
+        atendimentoCell.textContent = '0.00 min'; // Iniciando a célula com 0 minutos
+        atendimentoCell.style.backgroundColor = ''; // Resetando a cor da célula
+
         cronometroInterval = setInterval(() => {
             const elapsedTime = Date.now() - cronometroStartTime;
             atendimentoCell.textContent = `${(elapsedTime / 60000).toFixed(2)} min`; // Atualizando o tempo a cada segundo
         }, 1000);
     }
 }
+
 
     </script>
 </body>
