@@ -123,6 +123,7 @@
     }
 
 // Função para simular o planejamento
+// Função para simular o planejamento
 function simulate() {
     const rebocadorCapacity = parseFloat(document.getElementById('rebocador-capacity').value);
     const cycleTime = parseFloat(document.getElementById('cycle-time').value);
@@ -134,7 +135,7 @@ function simulate() {
     for (let i = 1; i <= machineCounter; i++) {
         const length = parseFloat(document.getElementById(`length-${i}`).value);
         const speed = parseFloat(document.getElementById(`speed-${i}`).value);
-        const consumption = 1 / (length / speed); // Consumo por unidade de tempo (minuto)
+        const consumption = 1 / (length / speed);
         setorConsumptions.push(consumption);
         totalDemand += consumption;
     }
@@ -166,18 +167,27 @@ function simulate() {
         for (let i = 0; i < machineCounter; i++) {
             const consumoSetor = setorConsumptions[i];
             const needed = Math.max(0, consumoSetor * cycleTime - reservas[i]);
+            const bobinas = Math.min(remainingCapacity, Math.ceil(needed));
 
-            // Se a máquina precisar de mais bobinas que o necessário, ajustamos a distribuição
-            let bobinas = Math.min(remainingCapacity, Math.ceil(needed));
-            if (remainingCapacity > 0) {
-                // As bobinas alocadas para a máquina são ajustadas de forma a não exceder a capacidade
-                viagem[i] = bobinas;
-                reservas[i] += bobinas - consumoSetor * cycleTime;
-                remainingCapacity -= bobinas;
-            }
+            // Ajuste para garantir que a carga será sempre maximizada
+            viagem[i] = bobinas;
+            reservas[i] += bobinas - consumoSetor * cycleTime;
+            remainingCapacity -= bobinas;
 
             // Acumula os totais
             totalPerMachine[i] += bobinas;
+
+            // Se a carga restante for maior que 0, tenta completar com outras máquinas
+            if (remainingCapacity > 0) {
+                for (let j = 0; j < machineCounter; j++) {
+                    if (j !== i) {
+                        const additionalBobinas = Math.min(remainingCapacity, Math.ceil(setorConsumptions[j] * cycleTime));
+                        viagem[j] += additionalBobinas;
+                        remainingCapacity -= additionalBobinas;
+                        totalPerMachine[j] += additionalBobinas;
+                    }
+                }
+            }
         }
 
         viagens.push(viagem);
@@ -192,7 +202,7 @@ function simulate() {
             <thead>
                 <tr>
                     <th>#</th>
-                    ${machineNames.map(name => `<th>${name}</th>`).join('')}
+                    ${machineNames.map(name => `<th>${name}</th>`).join('')} <!-- Nomes das máquinas nas colunas -->
                     <th>Atendimento</th>
                 </tr>
             </thead>
@@ -214,12 +224,11 @@ function simulate() {
             </tfoot>
         </table>
     `;
-    
     // Aplicar a coloração azul para células com valores diferentes de 0
     const rows = document.querySelectorAll('table tbody tr');
     rows.forEach(row => {
         const cells = row.querySelectorAll('td');
-        for (let i = 1; i < cells.length - 1; i++) {
+        for (let i = 1; i < cells.length - 1; i++) {  // Ignora a primeira (número) e a última (botão)
             const value = parseFloat(cells[i].textContent);
             if (value !== 0) {
                 cells[i].style.backgroundColor = 'blue'; // Aplica o fundo azul
@@ -227,6 +236,7 @@ function simulate() {
         }
     });
 }
+
 
 
     // Função para alternar o cronômetro de atendimento
