@@ -66,12 +66,19 @@
     <h1>Planejamento Logístico do Rebocador</h1>
     <div class="container">
         <!-- Entrada de Dados -->
-        <div class="section">
+        <div class="section" id="setores-container">
             <h2>Configuração dos Setores</h2>
-            <div id="machines-container">
-                <!-- Seções para cada máquina serão adicionadas dinamicamente -->
-            </div>
             <button onclick="addMachine()">Adicionar Máquina</button>
+            <div id="setores">
+                <!-- Setores serão adicionados aqui -->
+            </div>
+            <br>
+            <h3>Rebocador</h3>
+            <label for="cycle-time">Tempo de ciclo (min):</label>
+            <input type="number" id="cycle-time" value="15"><br><br>
+            <label for="rebocador-capacity">Capacidade (bobinas):</label>
+            <input type="number" id="rebocador-capacity" value="6"><br><br>
+
             <button onclick="simulate()">Simular</button>
         </div>
 
@@ -85,39 +92,49 @@
     </div>
 
     <script>
-        let machineCount = 0;
+        let machineCounter = 0; // Contador para máquinas
+        let activeCronometer = null;
+        let cronometroInterval = null;
+        let cronometroStartTime = null;
+        let viagemTimes = [];
 
+        // Função para adicionar nova máquina
         function addMachine() {
-            machineCount++;
-            const container = document.getElementById('machines-container');
-            
-            const machineSection = document.createElement('div');
-            machineSection.classList.add('machine');
-            machineSection.id = `machine-${machineCount}`;
-            machineSection.innerHTML = `
-                <h3>Máquina ${machineCount}</h3>
-                <label for="length-${machineCount}">Comprimento de bobina (m):</label>
-                <input type="number" id="length-${machineCount}" value="2000"><br><br>
-                <label for="speed-${machineCount}">Velocidade de consumo (m/min):</label>
-                <input type="number" id="speed-${machineCount}" value="150"><br><br>
+            machineCounter++;
+            const setorContainer = document.createElement('div');
+            setorContainer.id = `setor-${machineCounter}`;
+            setorContainer.innerHTML = `
+                <h3>Máquina ${machineCounter}</h3>
+                <label for="length-${machineCounter}">Comprimento de bobina (m):</label>
+                <input type="number" id="length-${machineCounter}" value="3000"><br><br>
+                <label for="speed-${machineCounter}">Velocidade de consumo (m/min):</label>
+                <input type="number" id="speed-${machineCounter}" value="212"><br><br>
             `;
-            container.appendChild(machineSection);
+            document.getElementById('setores').appendChild(setorContainer);
         }
 
+        // Função para simular o planejamento
         function simulate() {
-            const resultsDiv = document.getElementById('results');
-            let totalDemand = 0;
+            const rebocadorCapacity = parseFloat(document.getElementById('rebocador-capacity').value);
+            const cycleTime = parseFloat(document.getElementById('cycle-time').value);
 
-            for (let i = 1; i <= machineCount; i++) {
+            let totalDemand = 0;
+            let setorConsumptions = [];
+
+            // Loop para calcular o consumo de cada máquina
+            for (let i = 1; i <= machineCounter; i++) {
                 const length = parseFloat(document.getElementById(`length-${i}`).value);
                 const speed = parseFloat(document.getElementById(`speed-${i}`).value);
-                totalDemand += 1 / (length / speed);
+                const consumption = 1 / (length / speed);
+                setorConsumptions.push(consumption);
+                totalDemand += consumption;
             }
 
-            const cycleTime = parseFloat(document.getElementById('cycle-time').value);
-            const rebocadorCapacity = parseFloat(document.getElementById('rebocador-capacity').value);
+            // Capacidade do rebocador (bobinas/min)
             const rebocadorCapacityPerMinute = rebocadorCapacity / cycleTime;
 
+            // Verificação de capacidade
+            const resultsDiv = document.getElementById('results');
             if (totalDemand > rebocadorCapacityPerMinute) {
                 resultsDiv.innerHTML = `
                     <p><strong>O rebocador não consegue atender à demanda total.</strong></p>
@@ -127,7 +144,32 @@
                 return;
             }
 
-            // Lógica de distribuição e resultados
+            // Planejamento inicial das viagens
+            let viagens = [];
+            let reservas = Array(machineCounter).fill(0); // Reserva para cada máquina
+            let totalPerMachine = Array(machineCounter).fill(0); // Total por máquina
+
+            for (let t = 0; t < 18 * 60; t += cycleTime) { // Ciclo de 18 horas
+                let viagem = Array(machineCounter).fill(0); // Viagem para cada máquina
+                let remainingCapacity = rebocadorCapacity;
+
+                // Lógica de distribuição com prioridades e reservas
+                for (let i = 0; i < machineCounter; i++) {
+                    const consumoSetor = setorConsumptions[i];
+                    const needed = Math.max(0, consumoSetor * cycleTime - reservas[i]);
+                    const bobinas = Math.min(remainingCapacity, Math.ceil(needed));
+                    viagem[i] = bobinas;
+                    reservas[i] += bobinas - consumoSetor * cycleTime;
+                    remainingCapacity -= bobinas;
+
+                    // Acumula os totais
+                    totalPerMachine[i] += bobinas;
+                }
+
+                viagens.push(viagem);
+            }
+
+            // Renderização dos resultados
             resultsDiv.innerHTML = `
                 <p><strong>O rebocador atende à demanda.</strong></p>
                 <p>Demanda total: ${totalDemand.toFixed(2)} bobinas/min</p>
@@ -136,26 +178,60 @@
                     <thead>
                         <tr>
                             <th>#</th>
-                            <th>Máquina</th>
-                            <th>Consumo (bobinas/min)</th>
+                            ${Array.from({ length: machineCounter }, (_, i) => `<th>Máquina ${i + 1}</th>`).join('')}
+                            <th>Atendimento</th>
                         </tr>
                     </thead>
                     <tbody>
-                        ${[...Array(machineCount).keys()].map(i => {
-                            const length = parseFloat(document.getElementById(`length-${i + 1}`).value);
-                            const speed = parseFloat(document.getElementById(`speed-${i + 1}`).value);
-                            const consumption = (1 / (length / speed)).toFixed(2);
-                            return `
-                                <tr>
-                                    <td>${i + 1}</td>
-                                    <td>Máquina ${i + 1}</td>
-                                    <td>${consumption}</td>
-                                </tr>
-                            `;
-                        }).join('')}
+                        ${viagens.map((viagem, index) => `
+                            <tr>
+                                <td>${index + 1}</td>
+                                ${viagem.map(bobinas => `<td>${bobinas}</td>`).join('')}
+                                <td><button onclick="toggleCronometro(${index})">Atender</button></td>
+                            </tr>
+                        `).join('')}
                     </tbody>
+                    <tfoot>
+                        <tr>
+                            <td><strong>Total</strong></td>
+                            ${totalPerMachine.map(total => `<td><strong>${total}</strong></td>`).join('')}
+                            <td></td>
+                        </tr>
+                    </tfoot>
                 </table>
             `;
+        }
+
+        // Função para alternar o cronômetro de atendimento
+        function toggleCronometro(index) {
+            const viagem = document.querySelectorAll('table tr')[index + 1];
+            const atendimentoBtn = viagem.querySelector('button');
+            const atendimentoCell = viagem.querySelectorAll('td')[machineCounter]; // Coluna de Atendimento
+
+            if (activeCronometer === index) {
+                clearInterval(cronometroInterval);
+                atendimentoBtn.textContent = 'Atender';
+                const endTime = Date.now() - cronometroStartTime;
+                const elapsedMinutes = endTime / 60000;
+
+                atendimentoCell.textContent = `${elapsedMinutes.toFixed(2)} min`;
+                atendimentoCell.style.backgroundColor = (elapsedMinutes > parseFloat(document.getElementById('cycle-time').value)) ? 'red' : 'green';
+                activeCronometer = null;
+            } else {
+                if (activeCronometer !== null) {
+                    const prevViagem = document.querySelectorAll('table tr')[activeCronometer + 1];
+                    prevViagem.querySelector('button').textContent = 'Atender';
+                }
+
+                activeCronometer = index;
+                cronometroStartTime = Date.now();
+                atendimentoBtn.textContent = 'Parar';
+
+                cronometroInterval = setInterval(() => {
+                    const elapsedTime = Date.now() - cronometroStartTime;
+                    atendimentoCell.textContent = `${(elapsedTime / 60000).toFixed(2)} min`;
+                }, 1000);
+            }
         }
     </script>
 </body>
