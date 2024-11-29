@@ -122,7 +122,8 @@
         }
     }
 
-  function simulate() {
+// Função para simular o planejamento
+function simulate() {
     const rebocadorCapacity = parseFloat(document.getElementById('rebocador-capacity').value);
     const cycleTime = parseFloat(document.getElementById('cycle-time').value);
 
@@ -133,7 +134,7 @@
     for (let i = 1; i <= machineCounter; i++) {
         const length = parseFloat(document.getElementById(`length-${i}`).value);
         const speed = parseFloat(document.getElementById(`speed-${i}`).value);
-        const consumption = 1 / (length / speed); // Consumo por ciclo (bobinas/min)
+        const consumption = 1 / (length / speed); // Consumo por unidade de tempo (minuto)
         setorConsumptions.push(consumption);
         totalDemand += consumption;
     }
@@ -152,27 +153,31 @@
         return;
     }
 
-    // Planejamento otimizado das viagens
+    // Planejamento inicial das viagens
     let viagens = [];
     let reservas = Array(machineCounter).fill(0); // Reserva para cada máquina
     let totalPerMachine = Array(machineCounter).fill(0); // Total por máquina
 
-    // Ajuste da alocação de bobinas para cada ciclo
     for (let t = 0; t < 18 * 60; t += cycleTime) { // Ciclo de 18 horas
         let viagem = Array(machineCounter).fill(0); // Viagem para cada máquina
-        let remainingCapacity = rebocadorCapacity; // Capacidade restante do rebocador para o ciclo atual
+        let remainingCapacity = rebocadorCapacity;
 
-        // Distribuição de bobinas entre as máquinas proporcionalmente à demanda
-        let totalWeight = setorConsumptions.reduce((acc, consumption) => acc + consumption, 0);
-
+        // Lógica de distribuição com prioridades e reservas
         for (let i = 0; i < machineCounter; i++) {
             const consumoSetor = setorConsumptions[i];
-            const proportion = consumoSetor / totalWeight; // Proporção da capacidade total
-            const allocatedBobinas = Math.min(Math.floor(remainingCapacity * proportion), remainingCapacity);
-            
-            viagem[i] = allocatedBobinas;
-            remainingCapacity -= allocatedBobinas;
-            totalPerMachine[i] += allocatedBobinas; // Acumula as bobinas alocadas por máquina
+            const needed = Math.max(0, consumoSetor * cycleTime - reservas[i]);
+
+            // Se a máquina precisar de mais bobinas que o necessário, ajustamos a distribuição
+            let bobinas = Math.min(remainingCapacity, Math.ceil(needed));
+            if (remainingCapacity > 0) {
+                // As bobinas alocadas para a máquina são ajustadas de forma a não exceder a capacidade
+                viagem[i] = bobinas;
+                reservas[i] += bobinas - consumoSetor * cycleTime;
+                remainingCapacity -= bobinas;
+            }
+
+            // Acumula os totais
+            totalPerMachine[i] += bobinas;
         }
 
         viagens.push(viagem);
@@ -209,12 +214,12 @@
             </tfoot>
         </table>
     `;
-
+    
     // Aplicar a coloração azul para células com valores diferentes de 0
     const rows = document.querySelectorAll('table tbody tr');
     rows.forEach(row => {
         const cells = row.querySelectorAll('td');
-        for (let i = 1; i < cells.length - 1; i++) {  // Ignora a primeira (número) e a última (botão)
+        for (let i = 1; i < cells.length - 1; i++) {
             const value = parseFloat(cells[i].textContent);
             if (value !== 0) {
                 cells[i].style.backgroundColor = 'blue'; // Aplica o fundo azul
@@ -222,6 +227,7 @@
         }
     });
 }
+
 
     // Função para alternar o cronômetro de atendimento
     function toggleCronometro(index) {
