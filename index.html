@@ -60,6 +60,9 @@
         .active {
             background-color: #2196F3;
         }
+        .hidden {
+            visibility: hidden;
+        }
     </style>
 </head>
 <body>
@@ -212,12 +215,25 @@
                 clearInterval(cronometroInterval);
                 atendimentoBtn.textContent = 'Atender';
                 const endTime = Date.now() - cronometroStartTime;
-                const elapsedMinutes = endTime / 60000;
-
-                // Só mostra o tempo e aplica a cor depois de finalizado
-                atendimentoCell.textContent = `${elapsedMinutes.toFixed(2)} min`;
-                atendimentoCell.style.backgroundColor = (elapsedMinutes > parseFloat(document.getElementById('cycle-time').value)) ? 'red' : 'green';
+                viagemTimes.push(endTime);
                 activeCronometer = null;
+                atendimentoBtn.classList.remove('active');
+                atendimentoCell.innerHTML = `Tempo: ${formatTime(endTime)}`;
             } else {
-                if (activeCronometer !== null) {
-                    const prevViagem = document.querySelectorAll
+                activeCronometer = index;
+                cronometroStartTime = Date.now();
+                cronometroInterval = setInterval(() => {}, 1000);
+                atendimentoBtn.textContent = 'Finalizar';
+                atendimentoBtn.classList.add('active');
+            }
+        }
+
+        // Função para formatar o tempo em minutos
+        function formatTime(time) {
+            const minutes = Math.floor(time / 60000);
+            const seconds = Math.floor((time % 60000) / 1000);
+            return `${minutes}m ${seconds}s`;
+        }
+    </script>
+</body>
+</html>
