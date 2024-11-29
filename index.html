@@ -134,7 +134,7 @@ function simulate() {
     for (let i = 1; i <= machineCounter; i++) {
         const length = parseFloat(document.getElementById(`length-${i}`).value);
         const speed = parseFloat(document.getElementById(`speed-${i}`).value);
-        const consumption = 1 / (length / speed);
+        const consumption = (length / speed); // Ajuste na fórmula de consumo
         setorConsumptions.push(consumption);
         totalDemand += consumption;
     }
@@ -162,40 +162,18 @@ function simulate() {
         let viagem = Array(machineCounter).fill(0); // Viagem para cada máquina
         let remainingCapacity = rebocadorCapacity;
 
-        // Lógica de distribuição com antecipação de abastecimento
+        // Lógica de distribuição com prioridades e reservas
         for (let i = 0; i < machineCounter; i++) {
             const consumoSetor = setorConsumptions[i];
-            const needed = Math.max(0, consumoSetor * cycleTime - reservas[i]);
-            let bobinas = Math.min(remainingCapacity, Math.floor(needed));  // Utilizando Math.floor para bobinas inteiras
+            const needed = consumoSetor - reservas[i];  // Ajuste para garantir que nunca falta bobinas
+            const bobinas = Math.min(remainingCapacity, Math.ceil(needed));
+            viagem[i] = bobinas;
+            reservas[i] += bobinas - consumoSetor; // Ajuste para reservas
 
-            // Garantir que a capacidade do rebocador não seja ultrapassada
-            if (bobinas > 0) {
-                viagem[i] = bobinas;
-                reservas[i] += bobinas - consumoSetor * cycleTime;
-                remainingCapacity -= bobinas;
+            remainingCapacity -= bobinas;
 
-                // Acumula os totais
-                totalPerMachine[i] += bobinas;
-            }
-        }
-
-        // Caso haja sobra de capacidade, antecipa o abastecimento das máquinas que estão com menor estoque
-        if (remainingCapacity > 0) {
-            for (let i = 0; i < machineCounter; i++) {
-                if (remainingCapacity <= 0) break;
-
-                // Se a máquina não está com bobinas suficientes para o ciclo, abastece com bobinas inteiras
-                const needed = Math.max(0, setorConsumptions[i] * cycleTime - reservas[i]);
-                if (needed > 0) {
-                    let antecipacao = Math.min(remainingCapacity, Math.floor(needed));  // Transporte apenas bobinas inteiras
-                    if (antecipacao > 0) {
-                        reservas[i] += antecipacao;
-                        remainingCapacity -= antecipacao;
-                        totalPerMachine[i] += antecipacao;
-                        viagem[i] += antecipacao;
-                    }
-                }
-            }
+            // Acumula os totais
+            totalPerMachine[i] += bobinas;
         }
 
         viagens.push(viagem);
