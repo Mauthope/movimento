@@ -208,27 +208,27 @@
             const atendimentoBtn = viagem.querySelector('button');
             const atendimentoCell = viagem.querySelector('td:last-child');
 
-            if (activeCronometer === null) {
-                activeCronometer = index;
-                atendimentoBtn.textContent = 'Em andamento';
+            if (atendimentoBtn.textContent === "Atender") {
+                // Iniciar cronômetro
+                atendimentoBtn.textContent = "Finalizar";
                 atendimentoCell.style.backgroundColor = '#f3f3f3'; // Cor de andamento
                 atendimentoBtn.disabled = true;
                 cronometroStartTime = Date.now();
-                cronometroInterval = setInterval(() => updateCronometro(), 1000);
+                cronometroInterval = setInterval(() => updateCronometro(atendimentoBtn), 1000);
             } else {
+                // Finalizar cronômetro
                 const timeSpent = (Date.now() - cronometroStartTime) / 60000; // Tempo em minutos
                 clearInterval(cronometroInterval);
                 cronometroInterval = null;
                 atendimentoBtn.textContent = `Finalizado: ${timeSpent.toFixed(2)} min`;
                 atendimentoCell.style.backgroundColor = timeSpent > parseFloat(document.getElementById('cycle-time').value) ? 'red' : 'green';
-                activeCronometer = null;
             }
         }
 
         // Função para atualizar o cronômetro
-        function updateCronometro() {
+        function updateCronometro(button) {
             const timeSpent = (Date.now() - cronometroStartTime) / 60000; // Tempo em minutos
-            document.querySelectorAll('button')[activeCronometer].textContent = `Em andamento: ${timeSpent.toFixed(2)} min`;
+            button.textContent = `Em andamento: ${timeSpent.toFixed(2)} min`;
         }
     </script>
 </body>
