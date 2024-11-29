@@ -57,105 +57,83 @@
   </table>
 
   <script>
-    document.getElementById("calculateBtn").addEventListener("click", function () {
-      const capacityInput = document.getElementById("capacity");
-      const cycleTimeInput = document.getElementById("cycleTime");
-      const statusText = document.getElementById("statusText");
-      const resultTable = document.getElementById("resultTable").getElementsByTagName('tbody')[0];
-      const distributionTable = document.getElementById("distributionTable").getElementsByTagName('tbody')[0];
+   document.getElementById("calculate").addEventListener("click", () => {
+    // Limpeza anterior
+    resultTable.innerHTML = "";
+    distributionTable.innerHTML = "";
+    statusText.textContent = "";
 
-      // Setores (exemplo com dados)
-      const sectors = [
-        { name: "Setor 1", consumption: 100, speed: 2, isBobinasPerHour: false, multiplier: 1 },
-        { name: "Setor 2", consumption: 80, speed: 3, isBobinasPerHour: false, multiplier: 1 },
-        { name: "Setor 3", consumption: 150, speed: 4, isBobinasPerHour: false, multiplier: 1 },
-        { name: "Setor 4", bobinasPerHour: 120, isBobinasPerHour: true, multiplier: 1 },
-        { name: "Setor 5", bobinasPerHour: 90, isBobinasPerHour: true, multiplier: 1 }
-      ];
+    const rebocadorCapacity = parseFloat(capacityInput.value) || 0;
+    const cycleTime = parseFloat(cycleTimeInput.value) || 0;
 
-      // Limpar as tabelas e o status anterior
-      resultTable.innerHTML = "";
-      distributionTable.innerHTML = "";
-      statusText.textContent = "";
+    if (rebocadorCapacity <= 0 || cycleTime <= 0) {
+        statusText.textContent = "Por favor, insira valores válidos para capacidade e tempo de ciclo.";
+        statusText.className = "error";
+        return;
+    }
 
-      const rebocadorCapacity = parseFloat(capacityInput.value) || 0;
-      const cycleTime = parseFloat(cycleTimeInput.value) || 0;
+    const rebocadorCapacityPerMinute = rebocadorCapacity / cycleTime;
+    let totalDemandPerMinute = 0;
 
-      let totalDemandPerMinute = 0;
-      sectors.forEach(sector => {
-        if (!sector.isBobinasPerHour) {
-          // Calcula demanda por bobina por minuto
-          const bobinasPerMinute = (sector.consumption / sector.speed) / 60;
-          totalDemandPerMinute += bobinasPerMinute * sector.multiplier;
-        } else {
-          // Usa o valor diretamente para bobinas por hora
-          totalDemandPerMinute += sector.bobinasPerHour / 60;
-        }
-      });
+    sectors.forEach(sector => {
+        const bobinasPerMinute = sector.isBobinasPerHour 
+            ? sector.bobinasPerHour / 60 
+            : (sector.consumption / sector.speed) / 60 * sector.multiplier;
+        totalDemandPerMinute += bobinasPerMinute;
 
-      const rebocadorCapacityPerMinute = rebocadorCapacity / cycleTime;
+        // Popula tabela de resultados
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td>${sector.name}</td>
+            <td>${sector.isBobinasPerHour ? `Bobinas por Hora: ${sector.bobinasPerHour}` : `${sector.consumption}m, ${sector.speed}m/min`}</td>
+            <td>${bobinasPerMinute.toFixed(4)}</td>`;
+        resultTable.appendChild(tr);
+    });
 
-      if (totalDemandPerMinute <= rebocadorCapacityPerMinute) {
+    // Verifica capacidade
+    if (totalDemandPerMinute <= rebocadorCapacityPerMinute) {
         statusText.textContent = "O rebocador tem capacidade suficiente!";
         statusText.className = "success";
-      } else {
+    } else {
         statusText.textContent = "A capacidade do rebocador não é suficiente.";
         statusText.className = "error";
-      }
+    }
 
-      // Preencher a tabela de resultados
-      sectors.forEach(sector => {
-        const tr = document.createElement("tr");
-        if (sector.isBobinasPerHour) {
-          const bobinasPerMinute = sector.bobinasPerHour / 60;
-          tr.innerHTML = `<td>${sector.name}</td><td>Bobinas por Hora: ${sector.bobinasPerHour}</td><td>${bobinasPerMinute.toFixed(4)}</td>`;
-        } else {
-          const bobinasPerMinute = (sector.consumption / sector.speed) / 60;
-          tr.innerHTML = `<td>${sector.name}</td><td>${sector.consumption}m, ${sector.speed}m/min</td><td>${bobinasPerMinute.toFixed(4)}</td>`;
-        }
-        resultTable.appendChild(tr);
-      });
-
-      // Cálculo da distribuição de bobinas
-      const trips = [];
-      let remainingDemand = [...sectors];
-      let tripCounter = 1;
-
-      while (remainingDemand.some(sector => (sector.consumption > 0 || sector.bobinasPerHour > 0))) {
-        const trip = [];
-        let totalBobinasForTrip = 0;
+    // Calcular distribuição
+    let trips = [];
+    let remainingDemand = [...sectors];
+    while (remainingDemand.some(sector => sector.consumption > 0 || sector.isBobinasPerHour)) {
+        let trip = [];
+        let totalBobinas = 0;
 
         remainingDemand.forEach(sector => {
-          let bobinasForSector = 0;
-          if (sector.isBobinasPerHour) {
-            bobinasForSector = sector.bobinasPerHour / 60;
-          } else {
-            bobinasForSector = (sector.consumption / sector.speed) / 60;
-          }
+            let bobinasForTrip = sector.isBobinasPerHour 
+                ? sector.bobinasPerHour / 60 
+                : (sector.consumption / sector.speed) / 60 * sector.multiplier;
 
-          if (totalBobinasForTrip + bobinasForSector <= rebocadorCapacityPerMinute) {
-            trip.push(1);
-            totalBobinasForTrip += bobinasForSector;
-            if (!sector.isBobinasPerHour) {
-              sector.consumption -= bobinasForSector;
+            if (totalBobinas + bobinasForTrip <= rebocadorCapacityPerMinute) {
+                totalBobinas += bobinasForTrip;
+                trip.push(bobinasForTrip.toFixed(2));
+                if (!sector.isBobinasPerHour) {
+                    sector.consumption -= bobinasForTrip * sector.speed * 60 / sector.multiplier;
+                } else {
+                    sector.bobinasPerHour = 0;
+                }
+            } else {
+                trip.push(0);
             }
-          } else {
-            trip.push(0);
-          }
         });
 
         trips.push(trip);
-        tripCounter++;
-      }
+    }
 
-      // Preencher a tabela de distribuição
-      trips.forEach((trip, index) => {
+    trips.forEach((trip, index) => {
         const tr = document.createElement("tr");
-        tr.innerHTML = `<td>${index + 1}</td>` +
-          trip.map((sector, i) => `<td>${sector ? "Sim" : "Não"}</td>`).join('');
+        tr.innerHTML = `<td>${index + 1}</td>` + trip.map(val => `<td>${val}</td>`).join("");
         distributionTable.appendChild(tr);
-      });
     });
+});
+
   </script>
 </body>
 </html>
