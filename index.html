@@ -202,37 +202,49 @@
             `;
         }
 
-        // Função para alternar o cronômetro de atendimento
-        function toggleCronometro(index) {
-            const viagem = document.querySelectorAll('table tr')[index + 1];
-            const atendimentoBtn = viagem.querySelector('button');
-            const atendimentoCell = viagem.querySelectorAll('td')[machineCounter]; // Coluna de Atendimento
+       // Função para alternar o cronômetro de atendimento
+function toggleCronometro(index) {
+    const viagem = document.querySelectorAll('table tr')[index + 1];
+    const atendimentoBtn = viagem.querySelector('button');
+    const atendimentoCell = viagem.querySelectorAll('td')[machineCounter]; // Coluna de Atendimento
 
-            if (activeCronometer === index) {
-                clearInterval(cronometroInterval);
-                atendimentoBtn.textContent = 'Atender';
-                const endTime = Date.now() - cronometroStartTime;
-                const elapsedMinutes = endTime / 60000;
+    if (activeCronometer === index) {
+        // Se o cronômetro já estiver ativo, ele é parado
+        clearInterval(cronometroInterval);
+        atendimentoBtn.textContent = 'Atender';
 
-                atendimentoCell.textContent = `${elapsedMinutes.toFixed(2)} min`;
-                atendimentoCell.style.backgroundColor = (elapsedMinutes > parseFloat(document.getElementById('cycle-time').value)) ? 'red' : 'green';
-                activeCronometer = null;
-            } else {
-                if (activeCronometer !== null) {
-                    const prevViagem = document.querySelectorAll('table tr')[activeCronometer + 1];
-                    prevViagem.querySelector('button').textContent = 'Atender';
-                }
+        // Calculando o tempo gasto
+        const endTime = Date.now() - cronometroStartTime;
+        const elapsedMinutes = endTime / 60000;
 
-                activeCronometer = index;
-                cronometroStartTime = Date.now();
-                atendimentoBtn.textContent = 'Parar';
+        // Exibindo o tempo no formato "minutos" na coluna de Atendimento
+        atendimentoCell.textContent = `${elapsedMinutes.toFixed(2)} min`;
 
-                cronometroInterval = setInterval(() => {
-                    const elapsedTime = Date.now() - cronometroStartTime;
-                    atendimentoCell.textContent = `${(elapsedTime / 60000).toFixed(2)} min`;
-                }, 1000);
-            }
+        // Aplicando a cor de fundo de acordo com o tempo
+        atendimentoCell.style.backgroundColor = (elapsedMinutes > parseFloat(document.getElementById('cycle-time').value)) ? 'red' : 'green';
+
+        // Desativando o cronômetro
+        activeCronometer = null;
+    } else {
+        // Se outro cronômetro estava ativo, ele é parado
+        if (activeCronometer !== null) {
+            const prevViagem = document.querySelectorAll('table tr')[activeCronometer + 1];
+            prevViagem.querySelector('button').textContent = 'Atender';
         }
+
+        // Iniciando o cronômetro para a viagem selecionada
+        activeCronometer = index;
+        cronometroStartTime = Date.now();
+        atendimentoBtn.textContent = 'Parar';
+
+        // Atualizando o tempo a cada segundo
+        cronometroInterval = setInterval(() => {
+            const elapsedTime = Date.now() - cronometroStartTime;
+            atendimentoCell.textContent = `${(elapsedTime / 60000).toFixed(2)} min`;
+        }, 1000);
+    }
+}
+
     </script>
 </body>
 </html>
