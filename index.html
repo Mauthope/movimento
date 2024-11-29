@@ -1,145 +1,223 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Controle de Atendimento</title>
+    <title>Planejamento Logístico - Rebocador</title>
     <style>
-        .container {
+        body {
+            font-family: Arial, sans-serif;
             margin: 20px;
+            background: #f4f4f9;
+            color: #333;
         }
-
-        .atendimento-row {
-            margin-bottom: 10px;
+        h1, h2 {
+            text-align: center;
+            color: #4CAF50;
         }
-
-        .button-group {
+        .container {
             display: flex;
-            gap: 10px;
+            flex-wrap: wrap;
+            gap: 20px;
         }
-
-        .button-group button {
-            padding: 10px;
+        .section {
+            background: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            flex: 1;
+            min-width: 300px;
         }
-
-        .button-group button.green {
-            background-color: green;
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            text-align: center;
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+        th {
+            background: #4CAF50;
             color: white;
         }
-
-        .button-group button.red {
-            background-color: red;
+        button {
+            background: #4CAF50;
             color: white;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-radius: 5px;
         }
-
-        .button-group button.blue {
-            background-color: blue;
-            color: white;
+        button:hover {
+            background: #45a049;
         }
-
-        .button-group button.gray {
-            background-color: gray;
-            color: white;
+        .btn-group {
+            display: flex;
+            justify-content: space-around;
         }
-
-        .cronometro {
-            margin-left: 20px;
+        .active {
+            background-color: #2196F3;
         }
     </style>
 </head>
 <body>
+    <h1>Planejamento Logístico do Rebocador</h1>
     <div class="container">
-        <div id="atendimentos">
-            <!-- As máquinas serão adicionadas dinamicamente aqui -->
+        <!-- Entrada de Dados -->
+        <div class="section" id="setores-container">
+            <h2>Configuração dos Setores</h2>
+            <button onclick="addMachine()">Adicionar Máquina</button>
+            <div id="setores">
+                <!-- Setores serão adicionados aqui -->
+            </div>
+            <br>
+            <h3>Rebocador</h3>
+            <label for="cycle-time">Tempo de ciclo (min):</label>
+            <input type="number" id="cycle-time" value="15"><br><br>
+            <label for="rebocador-capacity">Capacidade (bobinas):</label>
+            <input type="number" id="rebocador-capacity" value="6"><br><br>
+
+            <button onclick="simulate()">Simular</button>
         </div>
-        <button id="adicionar-maquina">Adicionar Máquina</button>
+
+        <!-- Resultado -->
+        <div class="section">
+            <h2>Resultados</h2>
+            <div id="results">
+                <p>Preencha os campos e clique em "Simular".</p>
+            </div>
+        </div>
     </div>
 
     <script>
-        const maquinas = [];
+        let machineCounter = 0; // Contador para máquinas
         let activeCronometer = null;
         let cronometroInterval = null;
+        let cronometroStartTime = null;
+        let viagemTimes = [];
 
-        const adicionarMaquinaBtn = document.getElementById('adicionar-maquina');
-        const atendimentosContainer = document.getElementById('atendimentos');
-
-        adicionarMaquinaBtn.addEventListener('click', adicionarMaquina);
-
-        function adicionarMaquina() {
-            const maquinaIndex = maquinas.length;
-            const maquina = {
-                nome: `Máquina ${maquinaIndex + 1}`,
-                atendimentoStatus: 'inativo', // pode ser 'inativo', 'em atendimento', 'finalizado'
-                cronometroStartTime: null,
-                atendimentoTime: 0
-            };
-
-            maquinas.push(maquina);
-
-            const row = document.createElement('div');
-            row.classList.add('atendimento-row');
-            row.innerHTML = `
-                <strong>${maquina.nome}</strong>
-                <div class="button-group">
-                    <button class="atendimento-btn green" onclick="atender(${maquinaIndex})">Atender</button>
-                    <button class="parar-btn gray" onclick="pararAtendimento(${maquinaIndex})" disabled>Parar</button>
-                </div>
-                <div class="cronometro"></div>
+        // Função para adicionar nova máquina
+        function addMachine() {
+            machineCounter++;
+            const setorContainer = document.createElement('div');
+            setorContainer.id = `setor-${machineCounter}`;
+            setorContainer.innerHTML = `
+                <h3>Máquina ${machineCounter}</h3>
+                <label for="length-${machineCounter}">Comprimento de bobina (m):</label>
+                <input type="number" id="length-${machineCounter}" value="3000"><br><br>
+                <label for="speed-${machineCounter}">Velocidade de consumo (m/min):</label>
+                <input type="number" id="speed-${machineCounter}" value="212"><br><br>
             `;
-
-            atendimentosContainer.appendChild(row);
+            document.getElementById('setores').appendChild(setorContainer);
         }
 
-        function atender(index) {
-            const maquina = maquinas[index];
-            const atendimentoRow = atendimentosContainer.children[index];
-            const atendimentoBtn = atendimentoRow.querySelector('.atendimento-btn');
-            const pararBtn = atendimentoRow.querySelector('.parar-btn');
-            const cronometroDiv = atendimentoRow.querySelector('.cronometro');
+        // Função para simular o planejamento
+        function simulate() {
+            const rebocadorCapacity = parseFloat(document.getElementById('rebocador-capacity').value);
+            const cycleTime = parseFloat(document.getElementById('cycle-time').value);
 
-            if (maquina.atendimentoStatus === 'inativo') {
-                // Inicia o atendimento
-                maquina.atendimentoStatus = 'em atendimento';
-                atendimentoBtn.classList.remove('green');
-                atendimentoBtn.classList.add('red');
-                atendimentoBtn.textContent = 'Em Atendimento';
-                pararBtn.disabled = false;
-                pararBtn.classList.remove('gray');
-                pararBtn.classList.add('blue');
+            let totalDemand = 0;
+            let setorConsumptions = [];
 
-                maquina.cronometroStartTime = Date.now();
-                maquina.atendimentoTime = 0;
-
-                // Atualiza o cronômetro
-                cronometroInterval = setInterval(() => {
-                    const elapsedTime = Date.now() - maquina.cronometroStartTime;
-                    maquina.atendimentoTime = elapsedTime / 60000;
-                    cronometroDiv.textContent = `${maquina.atendimentoTime.toFixed(2)} min`;
-                }, 1000);
+            // Loop para calcular o consumo de cada máquina
+            for (let i = 1; i <= machineCounter; i++) {
+                const length = parseFloat(document.getElementById(`length-${i}`).value);
+                const speed = parseFloat(document.getElementById(`speed-${i}`).value);
+                const consumption = 1 / (length / speed);
+                setorConsumptions.push(consumption);
+                totalDemand += consumption;
             }
+
+            // Capacidade do rebocador (bobinas/min)
+            const rebocadorCapacityPerMinute = rebocadorCapacity / cycleTime;
+
+            // Verificação de capacidade
+            const resultsDiv = document.getElementById('results');
+            if (totalDemand > rebocadorCapacityPerMinute) {
+                resultsDiv.innerHTML = `
+                    <p><strong>O rebocador não consegue atender à demanda total.</strong></p>
+                    <p>Demanda total: ${totalDemand.toFixed(2)} bobinas/min</p>
+                    <p>Capacidade do rebocador: ${rebocadorCapacityPerMinute.toFixed(2)} bobinas/min</p>
+                `;
+                return;
+            }
+
+            // Planejamento inicial das viagens
+            let viagens = [];
+            let reservas = Array(machineCounter).fill(0); // Reserva para cada máquina
+            let totalPerMachine = Array(machineCounter).fill(0); // Total por máquina
+
+            for (let t = 0; t < 18 * 60; t += cycleTime) { // Ciclo de 18 horas
+                let viagem = Array(machineCounter).fill(0); // Viagem para cada máquina
+                let remainingCapacity = rebocadorCapacity;
+
+                // Lógica de distribuição com prioridades e reservas
+                for (let i = 0; i < machineCounter; i++) {
+                    const consumoSetor = setorConsumptions[i];
+                    const needed = Math.max(0, consumoSetor * cycleTime - reservas[i]);
+                    const bobinas = Math.min(remainingCapacity, Math.ceil(needed));
+                    viagem[i] = bobinas;
+                    reservas[i] += bobinas - consumoSetor * cycleTime;
+                    remainingCapacity -= bobinas;
+
+                    // Acumula os totais
+                    totalPerMachine[i] += bobinas;
+                }
+
+                viagens.push(viagem);
+            }
+
+            // Renderização dos resultados
+            resultsDiv.innerHTML = `
+                <p><strong>O rebocador atende à demanda.</strong></p>
+                <p>Demanda total: ${totalDemand.toFixed(2)} bobinas/min</p>
+                <p>Capacidade do rebocador: ${rebocadorCapacityPerMinute.toFixed(2)} bobinas/min</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            ${Array.from({ length: machineCounter }, (_, i) => `<th>Máquina ${i + 1}</th>`).join('')}
+                            <th>Atendimento</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${viagens.map((viagem, index) => `
+                            <tr>
+                                <td>${index + 1}</td>
+                                ${viagem.map(bobinas => `<td>${bobinas}</td>`).join('')}
+                                <td><button onclick="toggleCronometro(${index})">Atender</button></td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td><strong>Total</strong></td>
+                            ${totalPerMachine.map(total => `<td><strong>${total}</strong></td>`).join('')}
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            `;
         }
 
-        function pararAtendimento(index) {
-            const maquina = maquinas[index];
-            const atendimentoRow = atendimentosContainer.children[index];
-            const atendimentoBtn = atendimentoRow.querySelector('.atendimento-btn');
-            const pararBtn = atendimentoRow.querySelector('.parar-btn');
-            const cronometroDiv = atendimentoRow.querySelector('.cronometro');
+        // Função para alternar o cronômetro de atendimento
+        function toggleCronometro(index) {
+            const viagem = document.querySelectorAll('table tr')[index + 1];
+            const atendimentoBtn = viagem.querySelector('button');
+            const atendimentoCell = viagem.querySelectorAll('td')[machineCounter]; // Coluna de Atendimento
 
-            // Finaliza o atendimento
-            maquina.atendimentoStatus = 'finalizado';
-            clearInterval(cronometroInterval);
-            cronometroDiv.textContent += ` (Finalizado)`;
-            
-            atendimentoBtn.classList.remove('red');
-            atendimentoBtn.classList.add('green');
-            atendimentoBtn.textContent = 'Atendido';
+            if (activeCronometer === index) {
+                clearInterval(cronometroInterval);
+                atendimentoBtn.textContent = 'Atender';
+                const endTime = Date.now() - cronometroStartTime;
+                const elapsedMinutes = endTime / 60000;
 
-            pararBtn.classList.remove('blue');
-            pararBtn.classList.add('green');
-            pararBtn.textContent = 'Finalizado';
-            pararBtn.disabled = true;
-        }
-    </script>
-</body>
-</html>
+                // Só mostra o tempo e aplica a cor depois de finalizado
+                atendimentoCell.textContent = `${elapsedMinutes.toFixed(2)} min`;
+                atendimentoCell.style.backgroundColor = (elapsedMinutes > parseFloat(document.getElementById('cycle-time').value)) ? 'red' : 'green';
+                activeCronometer = null;
+            } else {
+                if (activeCronometer !== null) {
+                    const prevViagem = document.querySelectorAll
