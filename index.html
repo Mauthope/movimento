@@ -57,12 +57,6 @@
             display: flex;
             justify-content: space-around;
         }
-        .green {
-            background-color: #4CAF50;
-        }
-        .red {
-            background-color: #f44336;
-        }
     </style>
 </head>
 <body>
@@ -116,8 +110,7 @@
     <script>
         let activeCronometer = null;
         let cronometroInterval = null;
-        let startTime = 0;
-        let timeElapsed = 0;
+        let startTime = null;
 
         function simulate() {
             // Dados de entrada
@@ -161,7 +154,7 @@
             let totalImp = 0, totalLam = 0, totalCut1 = 0, totalCut2 = 0;
 
             for (let t = 0; t < 18 * 60; t += cycleTime) { // Ciclo de 18 horas
-                let viagem = { imp: 0, lam: 0, cut1: 0, cut2: 0, atendimento: '', tempoCronometro: 0 };
+                let viagem = { imp: 0, lam: 0, cut1: 0, cut2: 0, atendimento: '' };
                 let remainingCapacity = rebocadorCapacity;
 
                 // Lógica de distribuição com prioridades e reservas
@@ -186,35 +179,61 @@
                     if (setor === "cut2") totalCut2 += bobinas;
                 });
 
-                viagens.push({ ...viagem, tempoCronometro });
+                viagens.push({ ...viagem, reservas: { ...reservas } });
             }
 
-            // Gerando a tabela de resultados
-            let tableHTML = `
+            // Renderização dos resultados
+            resultsDiv.innerHTML = `
+                <p><strong>O rebocador atende à demanda.</strong></p>
+                <p>Demanda total: ${totalDemand.toFixed(2)} bobinas/min</p>
+                <p>Capacidade do rebocador: ${rebocadorCapacityPerMinute.toFixed(2)} bobinas/min</p>
                 <table>
-                    <thead>
-                        <tr>
-                            <th>Setor</th>
-                            <th>Bobinas</th>
-                            <th>Atendimento</th>
-                            <th>Tempo Cronômetro (min)</th>
+                    <tr>
+                        <th>Viagem</th>
+                        <th>Impressão</th>
+                        <th>Laminação</th>
+                        <th>Corte 1</th>
+                        <th>Corte 2</th>
+                        <th>Atendimento</th>
+                    </tr>
+                    ${viagens.map((viagem, index) => `
+                        <tr style="background-color: ${viagem.atendimento === '' ? '' : viagem.atendimento > cycleTime ? 'red' : 'green'}">
+                            <td>${index + 1}</td>
+                            <td>${viagem.imp}</td>
+                            <td>${viagem.lam}</td>
+                            <td>${viagem.cut1}</td>
+                            <td>${viagem.cut2}</td>
+                            <td><button onclick="toggleCronometro(${index})">Atender</button></td>
                         </tr>
-                    </thead>
-                    <tbody>`;
+                    `).join('')}
+                </table>
+            `;
+        }
 
-            viagens.forEach((viagem, index) => {
-                const color = viagem.tempoCronometro > cycleTime ? "red" : "green";
-                tableHTML += `
-                    <tr style="background-color:${color}">
-                        <td>Impressão</td>
-                        <td>${viagem.imp}</td>
-                        <td>${viagem.atendimento}</td>
-                        <td>${viagem.tempoCronometro}</td>
-                    </tr>`;
-            });
+        function toggleCronometro(index) {
+            const viagem = document.querySelectorAll('table tr')[index + 1];
+            const atendimentoBtn = viagem.querySelector('button');
 
-            tableHTML += `</tbody></table>`;
-            resultsDiv.innerHTML = tableHTML;
+            if (activeCronometer === index) {
+                clearInterval(cronometroInterval);
+                atendimentoBtn.textContent = 'Atender';
+                document.querySelector(`table tr:nth-child(${activeCronometer + 2})`).style.backgroundColor = '#f9f9f9'; // Remove a cor
+                activeCronometer = null;
+            } else {
+                if (activeCronometer !== null) {
+                    const prevViagem = document.querySelectorAll('table tr')[activeCronometer + 1];
+                    prevViagem.querySelector('button').textContent = 'Atender';
+                }
+
+                atendimentoBtn.textContent = 'Finalizar Atendimento';
+                activeCronometer = index;
+                startTime = new Date().getTime(); // Inicia o cronômetro
+                cronometroInterval = setInterval(() => {
+                    const elapsed = (new Date().getTime() - startTime) / 60000; // Tempo em minutos
+                    document.querySelector(`table tr:nth-child(${activeCronometer + 2})`).style.backgroundColor = (elapsed > cycleTime) ? 'red' : 'green';
+                    viagem.querySelector('td:nth-child(6)').textContent = elapsed.toFixed(2); // Atualiza o tempo
+                }, 1000);
+            }
         }
     </script>
 </body>
