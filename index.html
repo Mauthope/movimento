@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Planejamento de Logística - Rebocador</title>
+    <title>Planejamento Logístico - Rebocador</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -71,13 +71,10 @@
             <label for="lam-speed">Velocidade de consumo (m/min) - Laminação:</label>
             <input type="number" id="lam-speed" value="180"><br><br>
 
-            <label for="cut1-consumption">Bobinas por hora - Corte 1:</label>
-            <input type="number" id="cut1-consumption" value="2"><br><br>
-            <label for="cut2-consumption">Bobinas por hora - Corte 2:</label>
-            <input type="number" id="cut2-consumption" value="2"><br><br>
-
-            <label for="f1-consumption">Bobinas por hora - F1:</label>
-            <input type="number" id="f1-consumption" value="4"><br><br>
+            <label for="cut-length">Comprimento de bobina (m) - Corte:</label>
+            <input type="number" id="cut-length" value="2000"><br><br>
+            <label for="cut-speed">Velocidade de consumo (m/min) - Corte:</label>
+            <input type="number" id="cut-speed" value="150"><br><br>
 
             <label for="cycle-time">Tempo de ciclo do rebocador (min):</label>
             <input type="number" id="cycle-time" value="15"><br><br>
@@ -99,28 +96,29 @@
 
     <script>
         function simulate() {
+            // Dados de entrada
             const impLength = parseFloat(document.getElementById('imp-length').value);
             const impSpeed = parseFloat(document.getElementById('imp-speed').value);
             const lamLength = parseFloat(document.getElementById('lam-length').value);
             const lamSpeed = parseFloat(document.getElementById('lam-speed').value);
-            const cut1Consumption = parseFloat(document.getElementById('cut1-consumption').value) / 60;
-            const cut2Consumption = parseFloat(document.getElementById('cut2-consumption').value) / 60;
-            const f1Consumption = parseFloat(document.getElementById('f1-consumption').value) / 60;
+            const cutLength = parseFloat(document.getElementById('cut-length').value);
+            const cutSpeed = parseFloat(document.getElementById('cut-speed').value);
             const cycleTime = parseFloat(document.getElementById('cycle-time').value);
             const rebocadorCapacity = parseFloat(document.getElementById('rebocador-capacity').value);
 
-            // Cálculo da demanda de bobinas por minuto
-            const impDemand = 1 / (impLength / impSpeed);
-            const lamDemand = 1 / (lamLength / lamSpeed);
+            // Consumo por máquina (bobinas/min)
+            const impConsumption = 1 / (impLength / impSpeed) * 3; // 3 impressoras
+            const lamConsumption = 1 / (lamLength / lamSpeed) * 4; // 4 laminadoras
+            const cutConsumption = 1 / (cutLength / cutSpeed) * 2; // 2 cortes
 
-            // Demanda total de bobinas por minuto
-            const totalDemand = impDemand + lamDemand + cut1Consumption + cut2Consumption + f1Consumption;
+            // Consumo total por minuto
+            const totalDemand = impConsumption + lamConsumption + cutConsumption;
 
-            // Capacidade do rebocador por minuto
+            // Capacidade do rebocador (bobinas/min)
             const rebocadorCapacityPerMinute = rebocadorCapacity / cycleTime;
 
+            // Verificação de capacidade
             const resultsDiv = document.getElementById('results');
-
             if (totalDemand > rebocadorCapacityPerMinute) {
                 resultsDiv.innerHTML = `
                     <p><strong>O rebocador não consegue atender à demanda total.</strong></p>
@@ -130,38 +128,45 @@
                 return;
             }
 
-            // Planejamento das viagens
-            const totalCycles = Math.floor((18 * 60) / cycleTime);
+            // Planejamento inicial das viagens
             let viagens = [];
+            let reservas = { imp: 0, lam: 0, cut: 0 }; // Reservas iniciais
 
-            for (let i = 0; i < totalCycles; i++) {
-                let viagem = { imp: 0, lam: 0, cut1: 0, cut2: 0, f1: 0 };
+            for (let t = 0; t < 18 * 60; t += cycleTime) { // Ciclo de 18 horas
+                let viagem = { imp: 0, lam: 0, cut: 0 };
                 let remainingCapacity = rebocadorCapacity;
 
-                if (remainingCapacity > 0 && impDemand > 0) {
-                    viagem.imp++;
-                    remainingCapacity--;
-                }
-                if (remainingCapacity > 0 && lamDemand > 0) {
-                    viagem.lam++;
-                    remainingCapacity--;
-                }
-                if (remainingCapacity > 0 && cut1Consumption > 0) {
-                    viagem.cut1++;
-                    remainingCapacity--;
-                }
-                if (remainingCapacity > 0 && cut2Consumption > 0) {
-                    viagem.cut2++;
-                    remainingCapacity--;
-                }
-                if (remainingCapacity > 0 && f1Consumption > 0) {
-                    viagem.f1++;
-                    remainingCapacity--;
+                // Impressão
+                if (remainingCapacity > 0) {
+                    let needed = Math.max(0, impConsumption * cycleTime - reservas.imp);
+                    let bobinas = Math.min(remainingCapacity, Math.ceil(needed));
+                    viagem.imp = bobinas;
+                    reservas.imp += bobinas - impConsumption * cycleTime;
+                    remainingCapacity -= bobinas;
                 }
 
-                viagens.push(viagem);
+                // Laminação
+                if (remainingCapacity > 0) {
+                    let needed = Math.max(0, lamConsumption * cycleTime - reservas.lam);
+                    let bobinas = Math.min(remainingCapacity, Math.ceil(needed));
+                    viagem.lam = bobinas;
+                    reservas.lam += bobinas - lamConsumption * cycleTime;
+                    remainingCapacity -= bobinas;
+                }
+
+                // Corte
+                if (remainingCapacity > 0) {
+                    let needed = Math.max(0, cutConsumption * cycleTime - reservas.cut);
+                    let bobinas = Math.min(remainingCapacity, Math.ceil(needed));
+                    viagem.cut = bobinas;
+                    reservas.cut += bobinas - cutConsumption * cycleTime;
+                    remainingCapacity -= bobinas;
+                }
+
+                viagens.push({ ...viagem, reservas: { ...reservas } });
             }
 
+            // Renderização dos resultados
             resultsDiv.innerHTML = `
                 <p><strong>O rebocador atende à demanda.</strong></p>
                 <p>Demanda total: ${totalDemand.toFixed(2)} bobinas/min</p>
@@ -171,18 +176,20 @@
                         <th>Viagem</th>
                         <th>Impressão</th>
                         <th>Laminação</th>
-                        <th>Corte 1</th>
-                        <th>Corte 2</th>
-                        <th>F1</th>
+                        <th>Corte</th>
+                        <th>Reserva (Imp)</th>
+                        <th>Reserva (Lam)</th>
+                        <th>Reserva (Cut)</th>
                     </tr>
                     ${viagens.map((v, i) => `
                         <tr>
                             <td>${i + 1}</td>
                             <td>${v.imp}</td>
                             <td>${v.lam}</td>
-                            <td>${v.cut1}</td>
-                            <td>${v.cut2}</td>
-                            <td>${v.f1}</td>
+                            <td>${v.cut}</td>
+                            <td>${v.reservas.imp.toFixed(2)}</td>
+                            <td>${v.reservas.lam.toFixed(2)}</td>
+                            <td>${v.reservas.cut.toFixed(2)}</td>
                         </tr>
                     `).join('')}
                 </table>
