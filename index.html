@@ -202,6 +202,10 @@
             `;
         }
 
+let activeCronometer = null; // Controle do cronômetro ativo
+let cronometroStartTime = null; // Hora de início do cronômetro
+let cronometroInterval = null; // Intervalo do cronômetro
+
 // Função para alternar o cronômetro de atendimento
 function toggleCronometro(index) {
     const viagem = document.querySelectorAll('table tr')[index + 1];
@@ -211,28 +215,28 @@ function toggleCronometro(index) {
     // Se o cronômetro já estiver ativo para esta linha
     if (activeCronometer === index) {
         clearInterval(cronometroInterval); // Parar o cronômetro
-        const endTime = Date.now() - cronometroStartTime; // Calculando o tempo final do cronômetro
+        atendimentoBtn.style.display = 'none'; // Esconder o botão após finalizar o atendimento
+        
+        // Calculando o tempo total de atendimento em minutos
+        const endTime = Date.now() - cronometroStartTime;
         const elapsedMinutes = endTime / 60000; // Convertendo milissegundos para minutos
 
-        // Registrando o tempo final na célula de atendimento
-        atendimentoCell.textContent = `${elapsedMinutes.toFixed(2)} min`;
-
-        // Aplicando a cor de fundo da célula com base no tempo (verde ou vermelho)
-        atendimentoCell.style.backgroundColor = (elapsedMinutes > parseFloat(document.getElementById('cycle-time').value)) ? 'red' : 'green';
-
-        // Substituindo o botão pelo valor final do cronômetro
-        atendimentoBtn.textContent = `${elapsedMinutes.toFixed(2)} min`;
+        // Registrando o tempo na célula de atendimento e colorindo
+        atendimentoCell.textContent = `${elapsedMinutes.toFixed(2)} min`; // Exibindo o tempo
+        atendimentoCell.style.backgroundColor = (elapsedMinutes > parseFloat(document.getElementById('cycle-time').value)) ? 'red' : 'green'; // Aplicando a cor
 
         activeCronometer = null; // Resetando o índice do cronômetro ativo
     } else {
         if (activeCronometer !== null) {
             // Se um cronômetro estava ativo em outra linha, resetando
             const prevViagem = document.querySelectorAll('table tr')[activeCronometer + 1];
-            prevViagem.querySelector('button').textContent = 'Atender'; // Resetando o botão da linha anterior
+            prevViagem.querySelector('button').style.display = 'inline'; // Exibir o botão novamente na linha anterior
+            prevViagem.querySelector('button').textContent = 'Atender'; // Resetando o texto do botão
         }
 
         // Alterando o texto do botão para 'Finalizar Atendimento'
         atendimentoBtn.textContent = 'Finalizar Atendimento';
+        atendimentoBtn.style.display = 'inline'; // Exibindo o botão de "Finalizar Atendimento"
 
         // Ativando o cronômetro para esta linha
         activeCronometer = index;
