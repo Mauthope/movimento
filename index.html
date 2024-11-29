@@ -85,10 +85,6 @@
             <label for="cut2-speed">Velocidade de consumo (m/min):</label>
             <input type="number" id="cut2-speed" value="150"><br><br>
 
-            <h3>F1</h3>
-            <label for="f1-bobinas">Bobinas consumidas por hora:</label>
-            <input type="number" id="f1-bobinas" value="5"><br><br>
-
             <h3>Rebocador</h3>
             <label for="cycle-time">Tempo de ciclo (min):</label>
             <input type="number" id="cycle-time" value="15"><br><br>
@@ -118,7 +114,6 @@
             const cut1Speed = parseFloat(document.getElementById('cut1-speed').value);
             const cut2Length = parseFloat(document.getElementById('cut2-length').value);
             const cut2Speed = parseFloat(document.getElementById('cut2-speed').value);
-            const f1Bobinas = parseFloat(document.getElementById('f1-bobinas').value);
             const cycleTime = parseFloat(document.getElementById('cycle-time').value);
             const rebocadorCapacity = parseFloat(document.getElementById('rebocador-capacity').value);
 
@@ -127,10 +122,9 @@
             const lamConsumption = 1 / (lamLength / lamSpeed) * 4; // 4 laminadoras
             const cut1Consumption = 1 / (cut1Length / cut1Speed); // 1 máquina Corte 1
             const cut2Consumption = 1 / (cut2Length / cut2Speed); // 1 máquina Corte 2
-            const f1Consumption = f1Bobinas / 60; // Convertido para bobinas/min
 
             // Consumo total por minuto
-            const totalDemand = impConsumption + lamConsumption + cut1Consumption + cut2Consumption + f1Consumption;
+            const totalDemand = impConsumption + lamConsumption + cut1Consumption + cut2Consumption;
 
             // Capacidade do rebocador (bobinas/min)
             const rebocadorCapacityPerMinute = rebocadorCapacity / cycleTime;
@@ -148,53 +142,51 @@
 
             // Planejamento inicial das viagens
             let viagens = [];
-            let reservas = { imp: 0, lam: 0, cut1: 0, cut2: 0, f1: 0 };
+            let reservas = { imp: 0, lam: 0, cut1: 0, cut2: 0 };
 
             for (let t = 0; t < 18 * 60; t += cycleTime) { // Ciclo de 18 horas
-                let viagem = { imp: 0, lam: 0, cut1: 0, cut2: 0, f1: 0 };
+                let viagem = { imp: 0, lam: 0, cut1: 0, cut2: 0 };
                 let remainingCapacity = rebocadorCapacity;
 
-                // Dedicar toda a capacidade do rebocador ao F1
-                const f1Needed = f1Consumption * cycleTime - reservas.f1;
-                if (remainingCapacity >= f1Needed) {
-                    viagem.f1 = f1Needed;
-                    reservas.f1 += f1Needed;
-                    remainingCapacity -= f1Needed;
-                }
+                // Lógica de distribuição com prioridades e reservas
+                ["imp", "lam", "cut1", "cut2"].forEach((setor) => {
+                    const consumoSetor = {
+                        imp: impConsumption,
+                        lam: lamConsumption,
+                        cut1: cut1Consumption,
+                        cut2: cut2Consumption,
+                    }[setor];
 
-                // Alocar o restante do rebocador aos outros setores
-                ["imp", "lam", "cut1", "cut2"].forEach(sector => {
-                    const sectorConsumption = eval(`${sector}Consumption`) * cycleTime - reservas[sector];
-                    if (remainingCapacity >= sectorConsumption) {
-                        viagem[sector] = sectorConsumption;
-                        reservas[sector] += sectorConsumption;
-                        remainingCapacity -= sectorConsumption;
-                    }
+                    const needed = Math.max(0, consumoSetor * cycleTime - reservas[setor]);
+                    const bobinas = Math.min(remainingCapacity, Math.ceil(needed));
+                    viagem[setor] = bobinas;
+                    reservas[setor] += bobinas - consumoSetor * cycleTime;
+                    remainingCapacity -= bobinas;
                 });
 
-                viagens.push(viagem);
+                viagens.push({ ...viagem, reservas: { ...reservas } });
             }
 
-            // Exibir os resultados de viagem
+            // Renderização dos resultados
             resultsDiv.innerHTML = `
-                <h3>Distribuição de Bobinas por Viagem (18 horas)</h3>
+                <p><strong>O rebocador atende à demanda.</strong></p>
+                <p>Demanda total: ${totalDemand.toFixed(2)} bobinas/min</p>
+                <p>Capacidade do rebocador: ${rebocadorCapacityPerMinute.toFixed(2)} bobinas/min</p>
                 <table>
                     <tr>
-                        <th>Viagem</th>
+                        <th>Setor</th>
                         <th>Impressão</th>
                         <th>Laminação</th>
                         <th>Corte 1</th>
                         <th>Corte 2</th>
-                        <th>F1</th>
                     </tr>
                     ${viagens.map((v, i) => `
                         <tr>
                             <td>Viagem ${i + 1}</td>
-                            <td>${v.imp.toFixed(2)}</td>
-                            <td>${v.lam.toFixed(2)}</td>
-                            <td>${v.cut1.toFixed(2)}</td>
-                            <td>${v.cut2.toFixed(2)}</td>
-                            <td>${v.f1.toFixed(2)}</td>
+                            <td>${v.imp}</td>
+                            <td>${v.lam}</td>
+                            <td>${v.cut1}</td>
+                            <td>${v.cut2}</td>
                         </tr>
                     `).join('')}
                 </table>
