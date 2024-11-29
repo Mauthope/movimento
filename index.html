@@ -1,63 +1,237 @@
 <!DOCTYPE html>
-<html lang="pt">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Distribuição de Bobinas</title>
+  <title>Fluxo Logístico do Rebocador</title>
   <style>
-    .success { color: green; }
-    .error { color: red; }
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-    td, th { border: 1px solid #ddd; padding: 8px; text-align: center; }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f9;
+      color: #333;
+    }
+
+    header {
+      background-color: #004aad;
+      color: white;
+      padding: 1.5rem;
+      text-align: center;
+      font-size: 1.5rem;
+    }
+
+    main {
+      max-width: 1200px;
+      margin: 2rem auto;
+      padding: 1rem;
+      background-color: white;
+      box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+      border-radius: 10px;
+    }
+
+    .container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2rem;
+    }
+
+    .column {
+      flex: 1;
+      min-width: 300px;
+    }
+
+    h2 {
+      margin-bottom: 1rem;
+      color: #004aad;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: bold;
+    }
+
+    input {
+      padding: 0.5rem;
+      margin-bottom: 1rem;
+      width: 100%;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    button {
+      padding: 0.7rem 1.5rem;
+      background-color: #004aad;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    button:hover {
+      background-color: #003380;
+    }
+
+    .result-section {
+      margin-top: 2rem;
+      text-align: center;
+    }
+
+    #result-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+
+    #result-table th, #result-table td {
+      border: 1px solid #ddd;
+      padding: 0.8rem;
+      text-align: center;
+    }
+
+    #result-table th {
+      background-color: #004aad;
+      color: white;
+    }
+
+    #distribution-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 2rem;
+    }
+
+    #distribution-table th, #distribution-table td {
+      border: 1px solid #ddd;
+      padding: 0.8rem;
+      text-align: center;
+    }
+
+    #distribution-table th {
+      background-color: #004aad;
+      color: white;
+    }
+
+    #status {
+      font-weight: bold;
+      margin-top: 1rem;
+      padding: 1rem;
+      border-radius: 5px;
+    }
+
+    #status.success {
+      background-color: #d4edda;
+      color: #155724;
+    }
+
+    #status.error {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
   </style>
 </head>
 <body>
-  <h1>Distribuição de Bobinas</h1>
-
-  <label for="capacity">Capacidade do Rebocador (Bobinas por minuto):</label>
-  <input type="number" id="capacity" placeholder="Capacidade do rebocador">
-  <br>
-  <label for="cycleTime">Tempo de ciclo (minutos):</label>
-  <input type="number" id="cycleTime" placeholder="Tempo de ciclo">
-  <br>
-  <button id="calculateBtn">Calcular</button>
-
-  <h2>Status</h2>
-  <p id="statusText"></p>
-
-  <h2>Tabela de Resultados</h2>
-  <table id="resultTable">
-    <thead>
-      <tr>
-        <th>Setor</th>
-        <th>Consumo / Velocidade</th>
-        <th>Demanda por Minuto</th>
-      </tr>
-    </thead>
-    <tbody>
-      <!-- Dados dinâmicos serão inseridos aqui -->
-    </tbody>
-  </table>
-
-  <h2>Tabela de Distribuição</h2>
-  <table id="distributionTable">
-    <thead>
-      <tr>
-        <th>Viagem</th>
-        <th>Setor 1</th>
-        <th>Setor 2</th>
-        <th>Setor 3</th>
-        <th>Setor 4</th>
-        <th>Setor 5</th>
-      </tr>
-    </thead>
-    <tbody>
-      <!-- Distribuições dinâmicas serão inseridas aqui -->
-    </tbody>
-  </table>
-
+  <header>
+    Fluxo Logístico do Rebocador
+  </header>
+  <main>
+    <div class="container">
+      <div class="column">
+        <h2>Configuração do Rebocador</h2>
+        <label>
+          Capacidade Máxima (bobinas):
+          <input type="number" id="capacity" value="6" min="1">
+        </label>
+        <label>
+          Tempo de Ciclo (min):
+          <input type="number" id="cycleTime" value="15" min="1">
+        </label>
+      </div>
+      <div class="column">
+        <h2>Configuração dos Setores</h2>
+        <div id="sector-configs"></div>
+      </div>
+    </div>
+    <button id="calculate">Calcular</button>
+    <section class="result-section">
+      <h2>Resultados</h2>
+      <table id="result-table">
+        <thead>
+          <tr>
+            <th>Setor</th>
+            <th>Dados de Consumo</th>
+            <th>Demanda (bobinas/min)</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <table id="distribution-table">
+        <thead>
+          <tr>
+            <th>Viagem</th>
+            <th>Impressoras (1, 2, 3)</th>
+            <th>Laminadoras (1, 2, 3, 4)</th>
+            <th>Corte 1</th>
+            <th>Corte 2</th>
+            <th>F1</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <p id="status"></p>
+    </section>
+  </main>
   <script>
-   document.getElementById("calculate").addEventListener("click", () => {
+    document.addEventListener("DOMContentLoaded", () => {
+      const sectors = [
+        { name: "Impressoras (1, 2, 3)", consumption: 3000, speed: 212, multiplier: 3, isBobinasPerHour: false },
+        { name: "Laminadoras (1, 2, 3, 4)", consumption: 4000, speed: 150, multiplier: 4, isBobinasPerHour: false },
+        { name: "Corte 1", consumption: 1500, speed: 100, multiplier: 1, isBobinasPerHour: false },
+        { name: "Corte 2", consumption: 2000, speed: 120, multiplier: 1, isBobinasPerHour: false },
+        { name: "F1", bobinasPerHour: 60, multiplier: 1, isBobinasPerHour: true }
+      ];
+
+      const sectorConfigs = document.getElementById("sector-configs");
+      const capacityInput = document.getElementById("capacity");
+      const cycleTimeInput = document.getElementById("cycleTime");
+      const resultTable = document.querySelector("#result-table tbody");
+      const distributionTable = document.querySelector("#distribution-table tbody");
+      const statusText = document.getElementById("status");
+
+      // Render inputs for sectors
+      sectors.forEach((sector, index) => {
+        if (sector.isBobinasPerHour) {
+          sectorConfigs.innerHTML += `
+            <div>
+              <h4>${sector.name}</h4>
+              <label>Número de Bobinas por Hora:
+                <input type="number" value="${sector.bobinasPerHour}" data-index="${index}" data-key="bobinasPerHour">
+              </label>
+            </div>
+          `;
+        } else {
+          sectorConfigs.innerHTML += `
+            <div>
+              <h4>${sector.name}</h4>
+              <label>Comprimento da Bobina (m):
+                <input type="number" value="${sector.consumption}" data-index="${index}" data-key="consumption">
+              </label>
+              <label>Velocidade (m/min):
+                <input type="number" value="${sector.speed}" data-index="${index}" data-key="speed">
+              </label>
+            </div>
+          `;
+        }
+      });
+
+      sectorConfigs.addEventListener("input", (event) => {
+        const index = event.target.dataset.index;
+        const key = event.target.dataset.key;
+        sectors[index][key] = parseFloat(event.target.value) || 0;
+      });
+
+      document.getElementById("calculate").addEventListener("click", () => {
     // Limpeza anterior
     resultTable.innerHTML = "";
     distributionTable.innerHTML = "";
