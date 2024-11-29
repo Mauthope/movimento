@@ -93,6 +93,7 @@
 
 <script>
     let machineCounter = 0; // Contador para máquinas
+    let machineNames = []; // Array para armazenar os nomes das máquinas
     let activeCronometer = null;
     let cronometroInterval = null;
     let cronometroStartTime = null;
@@ -105,6 +106,7 @@
 
         if (machineName) {
             machineCounter++;
+            machineNames.push(machineName);  // Armazena o nome da máquina
             const setorContainer = document.createElement('div');
             setorContainer.id = `setor-${machineCounter}`;
             setorContainer.innerHTML = `
@@ -185,7 +187,7 @@
                 <thead>
                     <tr>
                         <th>#</th>
-                        ${Array.from({ length: machineCounter }, (_, i) => `<th>Máquina ${i + 1}</th>`).join('')}
+                        ${machineNames.map(name => `<th>${name}</th>`).join('')} <!-- Nomes das máquinas nas colunas -->
                         <th>Atendimento</th>
                     </tr>
                 </thead>
@@ -236,6 +238,7 @@
         button.textContent = `Em andamento: ${timeSpent.toFixed(2)} min`;
     }
 </script>
+
 
 </body>
 </html>
