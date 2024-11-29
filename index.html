@@ -17,8 +17,16 @@
         }
         .container {
             display: flex;
-            flex-direction: column;
+            flex-wrap: wrap;
             gap: 20px;
+        }
+        .section {
+            background: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            flex: 1;
+            min-width: 300px;
         }
         table {
             width: 100%;
@@ -45,76 +53,169 @@
         button:hover {
             background: #45a049;
         }
-        .btn-red {
-            background: #f44336;
+        .btn-group {
+            display: flex;
+            justify-content: space-around;
         }
-        .btn-green {
-            background: #4CAF50;
+        .green {
+            background-color: #4CAF50;
+        }
+        .red {
+            background-color: #f44336;
         }
     </style>
 </head>
 <body>
     <h1>Planejamento Logístico do Rebocador</h1>
     <div class="container">
-        <table>
-            <thead>
-                <tr>
-                    <th>Linha</th>
-                    <th>Tempo de Atendimento (segundos)</th>
-                    <th>Ação</th>
-                </tr>
-            </thead>
-            <tbody id="table-body">
-                <!-- Linhas dinâmicas serão geradas aqui -->
-            </tbody>
-        </table>
+        <!-- Entrada de Dados -->
+        <div class="section">
+            <h2>Configuração dos Setores</h2>
+            <h3>Impressão</h3>
+            <label for="imp-length">Comprimento de bobina (m):</label>
+            <input type="number" id="imp-length" value="3000"><br><br>
+            <label for="imp-speed">Velocidade de consumo (m/min):</label>
+            <input type="number" id="imp-speed" value="212"><br><br>
+
+            <h3>Laminação</h3>
+            <label for="lam-length">Comprimento de bobina (m):</label>
+            <input type="number" id="lam-length" value="2500"><br><br>
+            <label for="lam-speed">Velocidade de consumo (m/min):</label>
+            <input type="number" id="lam-speed" value="180"><br><br>
+
+            <h3>Corte 1</h3>
+            <label for="cut1-length">Comprimento de bobina (m):</label>
+            <input type="number" id="cut1-length" value="2000"><br><br>
+            <label for="cut1-speed">Velocidade de consumo (m/min):</label>
+            <input type="number" id="cut1-speed" value="150"><br><br>
+
+            <h3>Corte 2</h3>
+            <label for="cut2-length">Comprimento de bobina (m):</label>
+            <input type="number" id="cut2-length" value="2000"><br><br>
+            <label for="cut2-speed">Velocidade de consumo (m/min):</label>
+            <input type="number" id="cut2-speed" value="150"><br><br>
+
+            <h3>Rebocador</h3>
+            <label for="cycle-time">Tempo de ciclo (min):</label>
+            <input type="number" id="cycle-time" value="15"><br><br>
+            <label for="rebocador-capacity">Capacidade (bobinas):</label>
+            <input type="number" id="rebocador-capacity" value="6"><br><br>
+
+            <button onclick="simulate()">Simular</button>
+        </div>
+
+        <!-- Resultado -->
+        <div class="section">
+            <h2>Resultados</h2>
+            <div id="results">
+                <p>Preencha os campos e clique em "Simular".</p>
+            </div>
+        </div>
     </div>
 
     <script>
-        const cycleTime = 15 * 60; // Tempo de ciclo em segundos
-        let currentRow = 0;
-        let startTime = null;
-        let timerButton = null;
+        let activeCronometer = null;
+        let cronometroInterval = null;
+        let startTime = 0;
+        let timeElapsed = 0;
 
-        function generateTable(rows) {
-            const tableBody = document.getElementById('table-body');
-            for (let i = 0; i < rows; i++) {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${i + 1}</td>
-                    <td class="time-cell">--</td>
-                    <td>${i === 0 ? '<button onclick="toggleTimer(this)">Atender</button>' : ''}</td>
+        function simulate() {
+            // Dados de entrada
+            const impLength = parseFloat(document.getElementById('imp-length').value);
+            const impSpeed = parseFloat(document.getElementById('imp-speed').value);
+            const lamLength = parseFloat(document.getElementById('lam-length').value);
+            const lamSpeed = parseFloat(document.getElementById('lam-speed').value);
+            const cut1Length = parseFloat(document.getElementById('cut1-length').value);
+            const cut1Speed = parseFloat(document.getElementById('cut1-speed').value);
+            const cut2Length = parseFloat(document.getElementById('cut2-length').value);
+            const cut2Speed = parseFloat(document.getElementById('cut2-speed').value);
+            const cycleTime = parseFloat(document.getElementById('cycle-time').value);
+            const rebocadorCapacity = parseFloat(document.getElementById('rebocador-capacity').value);
+
+            // Consumo por máquina (bobinas/min)
+            const impConsumption = 1 / (impLength / impSpeed) * 3; // 3 impressoras
+            const lamConsumption = 1 / (lamLength / lamSpeed) * 4; // 4 laminadoras
+            const cut1Consumption = 1 / (cut1Length / cut1Speed); // 1 máquina Corte 1
+            const cut2Consumption = 1 / (cut2Length / cut2Speed); // 1 máquina Corte 2
+
+            // Consumo total por minuto
+            const totalDemand = impConsumption + lamConsumption + cut1Consumption + cut2Consumption;
+
+            // Capacidade do rebocador (bobinas/min)
+            const rebocadorCapacityPerMinute = rebocadorCapacity / cycleTime;
+
+            // Verificação de capacidade
+            const resultsDiv = document.getElementById('results');
+            if (totalDemand > rebocadorCapacityPerMinute) {
+                resultsDiv.innerHTML = `
+                    <p><strong>O rebocador não consegue atender à demanda total.</strong></p>
+                    <p>Demanda total: ${totalDemand.toFixed(2)} bobinas/min</p>
+                    <p>Capacidade do rebocador: ${rebocadorCapacityPerMinute.toFixed(2)} bobinas/min</p>
                 `;
-                tableBody.appendChild(row);
+                return;
             }
-        }
 
-        function toggleTimer(button) {
-            const rows = document.querySelectorAll('#table-body tr');
-            const timeCell = rows[currentRow].querySelector('.time-cell');
+            // Planejamento inicial das viagens
+            let viagens = [];
+            let reservas = { imp: 0, lam: 0, cut1: 0, cut2: 0 };
+            let totalImp = 0, totalLam = 0, totalCut1 = 0, totalCut2 = 0;
 
-            if (startTime === null) {
-                // Inicia o cronômetro
-                startTime = Date.now();
-                button.textContent = 'Finalizar Atendimento';
-            } else {
-                // Finaliza o cronômetro
-                const elapsedTime = Math.round((Date.now() - startTime) / 1000);
-                timeCell.textContent = elapsedTime;
-                timeCell.classList.add(elapsedTime > cycleTime ? 'btn-red' : 'btn-green');
-                startTime = null;
+            for (let t = 0; t < 18 * 60; t += cycleTime) { // Ciclo de 18 horas
+                let viagem = { imp: 0, lam: 0, cut1: 0, cut2: 0, atendimento: '', tempoCronometro: 0 };
+                let remainingCapacity = rebocadorCapacity;
 
-                // Move o botão para a próxima linha
-                if (currentRow < rows.length - 1) {
-                    rows[currentRow].querySelector('button').remove();
-                    currentRow++;
-                    rows[currentRow].lastElementChild.innerHTML = '<button onclick="toggleTimer(this)">Atender</button>';
-                }
+                // Lógica de distribuição com prioridades e reservas
+                ["imp", "lam", "cut1", "cut2"].forEach((setor) => {
+                    const consumoSetor = {
+                        imp: impConsumption,
+                        lam: lamConsumption,
+                        cut1: cut1Consumption,
+                        cut2: cut2Consumption,
+                    }[setor];
+
+                    const needed = Math.max(0, consumoSetor * cycleTime - reservas[setor]);
+                    const bobinas = Math.min(remainingCapacity, Math.ceil(needed));
+                    viagem[setor] = bobinas;
+                    reservas[setor] += bobinas - consumoSetor * cycleTime;
+                    remainingCapacity -= bobinas;
+
+                    // Acumula os totais
+                    if (setor === "imp") totalImp += bobinas;
+                    if (setor === "lam") totalLam += bobinas;
+                    if (setor === "cut1") totalCut1 += bobinas;
+                    if (setor === "cut2") totalCut2 += bobinas;
+                });
+
+                viagens.push({ ...viagem, tempoCronometro });
             }
-        }
 
-        // Gera 10 linhas por padrão
-        generateTable(10);
+            // Gerando a tabela de resultados
+            let tableHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Setor</th>
+                            <th>Bobinas</th>
+                            <th>Atendimento</th>
+                            <th>Tempo Cronômetro (min)</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+
+            viagens.forEach((viagem, index) => {
+                const color = viagem.tempoCronometro > cycleTime ? "red" : "green";
+                tableHTML += `
+                    <tr style="background-color:${color}">
+                        <td>Impressão</td>
+                        <td>${viagem.imp}</td>
+                        <td>${viagem.atendimento}</td>
+                        <td>${viagem.tempoCronometro}</td>
+                    </tr>`;
+            });
+
+            tableHTML += `</tbody></table>`;
+            resultsDiv.innerHTML = tableHTML;
+        }
     </script>
 </body>
 </html>
