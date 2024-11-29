@@ -154,42 +154,35 @@
                 let viagem = { imp: 0, lam: 0, cut1: 0, cut2: 0, f1: 0 };
                 let remainingCapacity = rebocadorCapacity;
 
-                // Se o setor F1 precisa de bobinas, o rebocador aloca toda a capacidade para F1
-                if (reservas.f1 < f1Bobinas) {
-                    const neededForF1 = f1Bobinas - reservas.f1;
-                    const bobinasForF1 = Math.min(remainingCapacity, neededForF1);
-                    viagem.f1 = bobinasForF1;
-                    reservas.f1 += bobinasForF1;
-                    remainingCapacity -= bobinasForF1;
-                }
+                // Lógica de distribuição com prioridades e reservas
+                ["imp", "lam", "cut1", "cut2"].forEach((setor) => {
+                    const consumoSetor = {
+                        imp: impConsumption,
+                        lam: lamConsumption,
+                        cut1: cut1Consumption,
+                        cut2: cut2Consumption,
+                    }[setor];
 
-                // Caso o rebocador ainda tenha capacidade, atende os outros setores
-                if (remainingCapacity > 0) {
-                    ["imp", "lam", "cut1", "cut2"].forEach((setor) => {
-                        const consumoSetor = {
-                            imp: impConsumption,
-                            lam: lamConsumption,
-                            cut1: cut1Consumption,
-                            cut2: cut2Consumption,
-                        }[setor];
+                    const needed = Math.max(0, consumoSetor * cycleTime - reservas[setor]);
+                    const bobinas = Math.min(remainingCapacity, Math.ceil(needed));
+                    viagem[setor] = bobinas;
+                    reservas[setor] += bobinas - consumoSetor * cycleTime;
+                    remainingCapacity -= bobinas;
+                });
 
-                        const needed = Math.max(0, consumoSetor * cycleTime - reservas[setor]);
-                        const bobinas = Math.min(remainingCapacity, Math.ceil(needed));
-                        viagem[setor] = bobinas;
-                        reservas[setor] += bobinas - consumoSetor * cycleTime;
-                        remainingCapacity -= bobinas;
-                    });
-                }
+                // F1 sempre recebe a capacidade total do rebocador, respeitando o takt
+                viagem.f1 = Math.min(remainingCapacity, rebocadorCapacity);
+                reservas.f1 += viagem.f1;
 
+                // Armazenar a viagem
                 viagens.push(viagem);
             }
 
-            // Exibição dos resultados
+            // Exibir o resultado da matriz de viagens
             resultsDiv.innerHTML = `
-                <h3>Distribuição das Bobinas por Viagem (18 horas)</h3>
                 <table>
                     <tr>
-                        <th>Viagem</th>
+                        <th>Setor</th>
                         <th>Impressão</th>
                         <th>Laminação</th>
                         <th>Corte 1</th>
