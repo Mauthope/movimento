@@ -57,6 +57,9 @@
             display: flex;
             justify-content: space-around;
         }
+        .active {
+            background-color: #2196F3;
+        }
     </style>
 </head>
 <body>
@@ -107,90 +110,149 @@
         </div>
     </div>
 
-   <script>
-    let cronometroInterval;
-    let startTime;
-    let activeCronometer = null;
-    const cycleTime = 5; // Tempo de ciclo do rebocador (exemplo: 5 minutos)
+    <script>
+        let activeCronometer = null;
+        let cronometroInterval = null;
+        let cronometroStartTime = null;
+        let viagemTimes = [];
 
-    function render() {
-        const viagens = [
-            { imp: 1, lam: 2, cut1: 3, cut2: 4, atendimento: '' },
-            { imp: 1, lam: 2, cut1: 3, cut2: 4, atendimento: '' },
-            // Adicione mais viagens aqui conforme necessário
-        ];
+        function simulate() {
+            // Dados de entrada
+            const impLength = parseFloat(document.getElementById('imp-length').value);
+            const impSpeed = parseFloat(document.getElementById('imp-speed').value);
+            const lamLength = parseFloat(document.getElementById('lam-length').value);
+            const lamSpeed = parseFloat(document.getElementById('lam-speed').value);
+            const cut1Length = parseFloat(document.getElementById('cut1-length').value);
+            const cut1Speed = parseFloat(document.getElementById('cut1-speed').value);
+            const cut2Length = parseFloat(document.getElementById('cut2-length').value);
+            const cut2Speed = parseFloat(document.getElementById('cut2-speed').value);
+            const cycleTime = parseFloat(document.getElementById('cycle-time').value);
+            const rebocadorCapacity = parseFloat(document.getElementById('rebocador-capacity').value);
 
-        const tableHTML = `
-            <table>
-                <tr>
-                    <th>Viagem</th>
-                    <th>Impressão</th>
-                    <th>Laminação</th>
-                    <th>Corte 1</th>
-                    <th>Corte 2</th>
-                    <th>Atendimento</th>
-                </tr>
-                ${viagens.map((viagem, index) => `
-                    <tr>
-                        <td>${index + 1}</td>
-                        <td>${viagem.imp}</td>
-                        <td>${viagem.lam}</td>
-                        <td>${viagem.cut1}</td>
-                        <td>${viagem.cut2}</td>
-                        <td><button onclick="toggleCronometro(${index})">Atender</button></td>
-                    </tr>
-                `).join('')}
-            </table>
-        `;
+            // Consumo por máquina (bobinas/min)
+            const impConsumption = 1 / (impLength / impSpeed) * 3; // 3 impressoras
+            const lamConsumption = 1 / (lamLength / lamSpeed) * 4; // 4 laminadoras
+            const cut1Consumption = 1 / (cut1Length / cut1Speed); // 1 máquina Corte 1
+            const cut2Consumption = 1 / (cut2Length / cut2Speed); // 1 máquina Corte 2
 
-        document.body.innerHTML = tableHTML;
-    }
+            // Consumo total por minuto
+            const totalDemand = impConsumption + lamConsumption + cut1Consumption + cut2Consumption;
 
-    function toggleCronometro(index) {
-        const table = document.querySelector('table');
-        const viagemRow = table.rows[index + 1];  // A primeira linha é o cabeçalho
-        const atendimentoBtn = viagemRow.querySelector('button');
+            // Capacidade do rebocador (bobinas/min)
+            const rebocadorCapacityPerMinute = rebocadorCapacity / cycleTime;
 
-        if (activeCronometer === index) {
-            // Finaliza o cronômetro
-            clearInterval(cronometroInterval);
-            const elapsed = (new Date().getTime() - startTime) / 60000; // Tempo em minutos
-            const atendimentoCell = viagemRow.cells[5]; // Célula de atendimento (botão)
-            atendimentoCell.textContent = `${elapsed.toFixed(2)} min`;  // Registra o tempo
-
-            // Altera a cor da célula de atendimento
-            if (elapsed > cycleTime) {
-                atendimentoCell.style.backgroundColor = 'red'; // Maior que o ciclo
-            } else {
-                atendimentoCell.style.backgroundColor = 'green'; // Menor ou igual ao ciclo
+            // Verificação de capacidade
+            const resultsDiv = document.getElementById('results');
+            if (totalDemand > rebocadorCapacityPerMinute) {
+                resultsDiv.innerHTML = `
+                    <p><strong>O rebocador não consegue atender à demanda total.</strong></p>
+                    <p>Demanda total: ${totalDemand.toFixed(2)} bobinas/min</p>
+                    <p>Capacidade do rebocador: ${rebocadorCapacityPerMinute.toFixed(2)} bobinas/min</p>
+                `;
+                return;
             }
 
-            // Reseta a variável ativa
-            activeCronometer = null;
-            atendimentoBtn.textContent = 'Atender'; // Volta para o texto original
-        } else {
-            if (activeCronometer !== null) {
-                // Se já houver um cronômetro ativo, finaliza ele
-                const prevViagemRow = table.rows[activeCronometer + 1];
-                const prevBtn = prevViagemRow.querySelector('button');
-                prevBtn.textContent = 'Atender'; // Restaura o botão para o texto original
-                clearInterval(cronometroInterval);
+            // Planejamento inicial das viagens
+            let viagens = [];
+            let reservas = { imp: 0, lam: 0, cut1: 0, cut2: 0 };
+            let totalImp = 0, totalLam = 0, totalCut1 = 0, totalCut2 = 0;
+
+            for (let t = 0; t < 18 * 60; t += cycleTime) { // Ciclo de 18 horas
+                let viagem = { imp: 0, lam: 0, cut1: 0, cut2: 0, atendimento: '', cronometro: 0 };
+                let remainingCapacity = rebocadorCapacity;
+
+                // Lógica de distribuição com prioridades e reservas
+                ["imp", "lam", "cut1", "cut2"].forEach((setor) => {
+                    const consumoSetor = {
+                        imp: impConsumption,
+                        lam: lamConsumption,
+                        cut1: cut1Consumption,
+                        cut2: cut2Consumption,
+                    }[setor];
+
+                    const needed = Math.max(0, consumoSetor * cycleTime - reservas[setor]);
+                    const bobinas = Math.min(remainingCapacity, Math.ceil(needed));
+                    viagem[setor] = bobinas;
+                    reservas[setor] += bobinas - consumoSetor * cycleTime;
+                    remainingCapacity -= bobinas;
+
+                    // Acumula os totais
+                    if (setor === "imp") totalImp += bobinas;
+                    if (setor === "lam") totalLam += bobinas;
+                    if (setor === "cut1") totalCut1 += bobinas;
+                    if (setor === "cut2") totalCut2 += bobinas;
+                });
+
+                viagens.push({ ...viagem, reservas: { ...reservas } });
             }
 
-            // Inicia o cronômetro para a nova viagem
-            atendimentoBtn.textContent = 'Finalizar Atendimento';
-            activeCronometer = index;
-            startTime = new Date().getTime(); // Inicia o cronômetro
-
-            cronometroInterval = setInterval(() => {
-                const elapsed = (new Date().getTime() - startTime) / 60000; // Tempo em minutos
-                viagemRow.querySelector('td:nth-child(6)').textContent = `${elapsed.toFixed(2)} min`; // Atualiza o tempo na linha
-            }, 1000);
+            // Renderização dos resultados
+            resultsDiv.innerHTML = `
+                <p><strong>O rebocador atende à demanda.</strong></p>
+                <p>Demanda total: ${totalDemand.toFixed(2)} bobinas/min</p>
+                <p>Capacidade do rebocador: ${rebocadorCapacityPerMinute.toFixed(2)} bobinas/min</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Impressão</th>
+                            <th>Laminação</th>
+                            <th>Corte 1</th>
+                            <th>Corte 2</th>
+                            <th>Atendimento</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${viagens.map((viagem, index) => `
+                            <tr>
+                                <td>${index + 1}</td>
+                                <td>${viagem.imp}</td>
+                                <td>${viagem.lam}</td>
+                                <td>${viagem.cut1}</td>
+                                <td>${viagem.cut2}</td>
+                                <td><button onclick="toggleCronometro(${index})">Atender</button></td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td><strong>Total</strong></td>
+                            <td><strong>${totalImp}</strong></td>
+                            <td><strong>${totalLam}</strong></td>
+                            <td><strong>${totalCut1}</strong></td>
+                            <td><strong>${totalCut2}</strong></td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            `;
         }
-    }
 
-    render();
-</script>
+        function toggleCronometro(index) {
+            const viagem = document.querySelectorAll('table tr')[index + 1];
+            const atendimentoBtn = viagem.querySelector('button');
 
+            // Atualiza a célula com base no tempo do cronômetro
+            if (activeCronometer === index) {
+                clearInterval(cronometroInterval);
+                atendimentoBtn.textContent = 'Atender';
+                const endTime = Date.now() - cronometroStartTime;
+                const elapsedMinutes = endTime / 60000; // Convertendo milissegundos para minutos
+                viagem.querySelectorAll('td')[1].style.backgroundColor = (elapsedMinutes > parseFloat(document.getElementById('cycle-time').value)) ? 'red' : 'green';
+                activeCronometer = null;
+            } else {
+                if (activeCronometer !== null) {
+                    const prevViagem = document.querySelectorAll('table tr')[activeCronometer + 1];
+                    prevViagem.querySelector('button').textContent = 'Atender';
+                }
+                atendimentoBtn.textContent = 'Finalizar Atendimento';
+                activeCronometer = index;
+                cronometroStartTime = Date.now();
+                cronometroInterval = setInterval(() => {
+                    console.log(`Cronômetro para viagem ${index + 1}`);
+                }, 1000);
+            }
+        }
+    </script>
 </body>
 </html>
