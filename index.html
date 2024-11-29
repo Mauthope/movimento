@@ -76,6 +76,11 @@
             <label for="cut-speed">Velocidade de consumo (m/min) - Corte:</label>
             <input type="number" id="cut-speed" value="150"><br><br>
 
+            <label for="f1-length">Comprimento de bobina (m) - F1:</label>
+            <input type="number" id="f1-length" value="1500"><br><br>
+            <label for="f1-speed">Velocidade de consumo (m/min) - F1:</label>
+            <input type="number" id="f1-speed" value="130"><br><br>
+
             <label for="cycle-time">Tempo de ciclo do rebocador (min):</label>
             <input type="number" id="cycle-time" value="15"><br><br>
             
@@ -103,6 +108,8 @@
             const lamSpeed = parseFloat(document.getElementById('lam-speed').value);
             const cutLength = parseFloat(document.getElementById('cut-length').value);
             const cutSpeed = parseFloat(document.getElementById('cut-speed').value);
+            const f1Length = parseFloat(document.getElementById('f1-length').value);
+            const f1Speed = parseFloat(document.getElementById('f1-speed').value);
             const cycleTime = parseFloat(document.getElementById('cycle-time').value);
             const rebocadorCapacity = parseFloat(document.getElementById('rebocador-capacity').value);
 
@@ -110,9 +117,10 @@
             const impConsumption = 1 / (impLength / impSpeed) * 3; // 3 impressoras
             const lamConsumption = 1 / (lamLength / lamSpeed) * 4; // 4 laminadoras
             const cutConsumption = 1 / (cutLength / cutSpeed) * 2; // 2 cortes
+            const f1Consumption = 1 / (f1Length / f1Speed); // 1 F1
 
             // Consumo total por minuto
-            const totalDemand = impConsumption + lamConsumption + cutConsumption;
+            const totalDemand = impConsumption + lamConsumption + cutConsumption + f1Consumption;
 
             // Capacidade do rebocador (bobinas/min)
             const rebocadorCapacityPerMinute = rebocadorCapacity / cycleTime;
@@ -130,10 +138,10 @@
 
             // Planejamento inicial das viagens
             let viagens = [];
-            let reservas = { imp: 0, lam: 0, cut: 0 }; // Reservas iniciais
+            let reservas = { imp: 0, lam: 0, cut: 0, f1: 0 }; // Reservas iniciais
 
             for (let t = 0; t < 18 * 60; t += cycleTime) { // Ciclo de 18 horas
-                let viagem = { imp: 0, lam: 0, cut: 0 };
+                let viagem = { imp: 0, lam: 0, cut: 0, f1: 0 };
                 let remainingCapacity = rebocadorCapacity;
 
                 // Impressão
@@ -163,6 +171,15 @@
                     remainingCapacity -= bobinas;
                 }
 
+                // F1
+                if (remainingCapacity > 0) {
+                    let needed = Math.max(0, f1Consumption * cycleTime - reservas.f1);
+                    let bobinas = Math.min(remainingCapacity, Math.ceil(needed));
+                    viagem.f1 = bobinas;
+                    reservas.f1 += bobinas - f1Consumption * cycleTime;
+                    remainingCapacity -= bobinas;
+                }
+
                 viagens.push({ ...viagem, reservas: { ...reservas } });
             }
 
@@ -177,21 +194,22 @@
                         <th>Impressão</th>
                         <th>Laminação</th>
                         <th>Corte</th>
-                        <th>Reserva (Imp)</th>
-                        <th>Reserva (Lam)</th>
-                        <th>Reserva (Cut)</th>
+                        <th>F1</th>
+                        <th>Reservas</th>
                     </tr>
-                    ${viagens.map((v, i) => `
-                        <tr>
-                            <td>${i + 1}</td>
-                            <td>${v.imp}</td>
-                            <td>${v.lam}</td>
-                            <td>${v.cut}</td>
-                            <td>${v.reservas.imp.toFixed(2)}</td>
-                            <td>${v.reservas.lam.toFixed(2)}</td>
-                            <td>${v.reservas.cut.toFixed(2)}</td>
-                        </tr>
-                    `).join('')}
+                    ${viagens
+                        .map(
+                            (v, i) => `
+                            <tr>
+                                <td>${i + 1}</td>
+                                <td>${v.imp}</td>
+                                <td>${v.lam}</td>
+                                <td>${v.cut}</td>
+                                <td>${v.f1}</td>
+                                <td>${JSON.stringify(v.reservas)}</td>
+                            </tr>`
+                        )
+                        .join('')}
                 </table>
             `;
         }
